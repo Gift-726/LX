@@ -1,0 +1,460 @@
+/**
+ * Product Controller
+ * Handles all product-related operations (CRUD)
+ */
+
+const mongoose = require("mongoose");
+const Product = require("../models/Product");
+const Category = require("../models/Category");
+
+/* ============================================================
+   CREATE PRODUCT (Admin Only)
+============================================================ */
+const createProduct = async (req, res) => {
+    try {
+        const { title, description, price, currency, discountPercentage, category, images, tags, stock } = req.body;
+
+        // Validate required fields
+        if (!title || !description || !price || !category) {
+            return res.status(400).json({
+                success: false,
+                message: "Title, description, price, and category are required"
+            });
+        }
+
+        // Validate category is a valid MongoDB ObjectId
+        if (!mongoose.Types.ObjectId.isValid(category)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid category ID format. Please provide a valid category ID.",
+                error: `"${category}" is not a valid MongoDB ObjectId`
+            });
+        }
+
+        // Verify category exists
+        const categoryExists = await Category.findById(category);
+        if (!categoryExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found",
+                error: `Category with ID "${category}" does not exist`
+            });
+        }
+
+        const product = await Product.create({
+            title,
+            description,
+            price,
+            currency: currency || "NGN",
+            discountPercentage: discountPercentage || 0,
+            category,
+            images: images || [],
+            tags: tags || [],
+            stock: stock || 0,
+            createdBy: req.user._id
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Product created successfully",
+            product
+        });
+
+    } catch (error) {
+        console.error("Create product error:", error);
+        
+        // Handle MongoDB cast errors
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid ID format",
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   GET ALL PRODUCTS (with filters)
+============================================================ */
+const getProducts = async (req, res) => {
+    try {
+        const { category, search, minPrice, maxPrice, tags, page = 1, limit = 20 } = req.query;
+
+        let query = {};
+
+        // Filter by category
+        if (category) {
+            // Validate category ID format
+            if (!mongoose.Types.ObjectId.isValid(category)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid category ID format in query parameter",
+                    error: `"${category}" is not a valid MongoDB ObjectId`
+                });
+            }
+            query.category = category;
+        }
+
+        // Search by text
+        if (search) {
+            query.$text = { $search: search };
+        }
+
+        // Filter by price range
+        if (minPrice || maxPrice) {
+            query.price = {};
+            if (minPrice) query.price.$gte = Number(minPrice);
+            if (maxPrice) query.price.$lte = Number(maxPrice);
+        }
+
+        // Filter by tags
+        if (tags) {
+            const tagArray = tags.split(",");
+            query.tags = { $in: tagArray };
+        }
+
+        let products = await Product.find(query)
+            .populate("category", "name image")
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .sort({ createdAt: -1 });
+
+        // Get user's wishlist if authenticated
+        let userWishlist = [];
+        if (req.user && req.user._id) {
+            const Wishlist = require("../models/Wishlist");
+            const wishlistItems = await Wishlist.find({ user: req.user._id }).select("product");
+            userWishlist = wishlistItems.map(item => item.product.toString());
+        }
+
+        // Add calculated badges and wishlist status to products
+        products = products.map(product => {
+            const productObj = product.toObject();
+            productObj.calculatedBadges = calculateProductBadges(product);
+            productObj.isInWishlist = req.user && req.user._id 
+                ? userWishlist.includes(productObj._id.toString())
+                : false;
+            return productObj;
+        });
+
+        const count = await Product.countDocuments(query);
+
+        res.json({
+            success: true,
+            products,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            total: count
+        });
+
+    } catch (error) {
+        console.error("Get products error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   GET RECOMMENDED PRODUCTS
+============================================================ */
+const getRecommendedProducts = async (req, res) => {
+    try {
+        const { limit = 10 } = req.query;
+
+        // For now, return most recent products
+        // In future, implement ML-based recommendations
+        const products = await Product.find()
+            .populate("category", "name image")
+            .sort({ createdAt: -1 })
+            .limit(Number(limit));
+
+        // Add calculated badges to products
+        const productsWithBadges = products.map(product => {
+            const productObj = product.toObject();
+            productObj.calculatedBadges = calculateProductBadges(product);
+            return productObj;
+        });
+
+        res.json({
+            success: true,
+            products: productsWithBadges
+        });
+
+    } catch (error) {
+        console.error("Get recommended products error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   GET FEATURED PRODUCTS (For "Best Offer" Banner)
+============================================================ */
+const getFeaturedProducts = async (req, res) => {
+    try {
+        const { limit = 10 } = req.query;
+
+        const products = await Product.find({ 
+            isFeatured: true,
+            $or: [
+                { featuredUntil: { $gte: new Date() } },
+                { featuredUntil: null }
+            ]
+        })
+            .populate("category", "name image")
+            .sort({ featuredAt: -1, createdAt: -1 })
+            .limit(Number(limit));
+
+        // Get user's wishlist if authenticated
+        let userWishlist = [];
+        if (req.user && req.user._id) {
+            const Wishlist = require("../models/Wishlist");
+            const wishlistItems = await Wishlist.find({ user: req.user._id }).select("product");
+            userWishlist = wishlistItems.map(item => item.product.toString());
+        }
+
+        // Add calculated badges and wishlist status
+        const productsWithBadges = products.map(product => {
+            const productObj = product.toObject();
+            productObj.calculatedBadges = calculateProductBadges(product);
+            productObj.isInWishlist = req.user && req.user._id 
+                ? userWishlist.includes(productObj._id.toString())
+                : false;
+            return productObj;
+        });
+
+        res.json({
+            success: true,
+            products: productsWithBadges
+        });
+
+    } catch (error) {
+        console.error("Get featured products error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   CALCULATE PRODUCT BADGES
+============================================================ */
+const calculateProductBadges = (product) => {
+    const badges = [];
+    const productObj = product.toObject ? product.toObject() : product;
+    
+    // Use manual badges if set
+    if (productObj.badges && productObj.badges.length > 0) {
+        return productObj.badges;
+    }
+    
+    // Calculate badges based on product properties
+    if (productObj.discountPercentage >= 40) {
+        badges.push("HOT");
+    } else if (productObj.discountPercentage > 0) {
+        badges.push("SALE");
+    }
+    
+    // Check if product is new (created within last 7 days)
+    if (productObj.createdAt) {
+        const daysSinceCreation = (Date.now() - new Date(productObj.createdAt)) / (1000 * 60 * 60 * 24);
+        if (daysSinceCreation <= 7) {
+            badges.push("NEW");
+        }
+    }
+    
+    // Check if low stock (limited availability)
+    if (productObj.stock > 0 && productObj.stock <= 5) {
+        badges.push("LIMITED");
+    }
+    
+    return badges;
+};
+
+/* ============================================================
+   GET PRODUCT BY ID
+============================================================ */
+const getProductById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        let product = await Product.findById(id).populate("category", "name image");
+        
+        if (product) {
+            const productObj = product.toObject();
+            productObj.calculatedBadges = calculateProductBadges(product);
+            
+            // Check if in wishlist (if user is authenticated)
+            if (req.user && req.user._id) {
+                const Wishlist = require("../models/Wishlist");
+                const wishlistItem = await Wishlist.findOne({
+                    user: req.user._id,
+                    product: productObj._id
+                });
+                productObj.isInWishlist = !!wishlistItem;
+            } else {
+                productObj.isInWishlist = false;
+            }
+            
+            product = productObj;
+        }
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            product
+        });
+
+    } catch (error) {
+        console.error("Get product by ID error:", error);
+        
+        // Handle MongoDB cast errors
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid product ID format",
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   UPDATE PRODUCT (Admin Only)
+============================================================ */
+const updateProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        // Validate product ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid product ID format"
+            });
+        }
+
+        // If category is being updated, validate it
+        if (updates.category) {
+            if (!mongoose.Types.ObjectId.isValid(updates.category)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid category ID format. Please provide a valid category ID.",
+                    error: `"${updates.category}" is not a valid MongoDB ObjectId`
+                });
+            }
+
+            // Verify category exists
+            const categoryExists = await Category.findById(updates.category);
+            if (!categoryExists) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Category not found",
+                    error: `Category with ID "${updates.category}" does not exist`
+                });
+            }
+        }
+
+        const product = await Product.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Product updated successfully",
+            product
+        });
+
+    } catch (error) {
+        console.error("Update product error:", error);
+        
+        // Handle MongoDB cast errors
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid ID format",
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   DELETE PRODUCT (Admin Only)
+============================================================ */
+const deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const product = await Product.findByIdAndDelete(id);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Product deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("Delete product error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+module.exports = {
+    createProduct,
+    getProducts,
+    getRecommendedProducts,
+    getFeaturedProducts,
+    getProductById,
+    updateProduct,
+    deleteProduct
+};
