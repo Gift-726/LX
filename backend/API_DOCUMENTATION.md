@@ -1504,9 +1504,9 @@ Authorization: Bearer <admin_jwt_token>
 ```
 
 ---
-## 📁 Categories Endpoints
+##  Categories Endpoints
 
-> **📌 Important:** The system has 11 default categories (Travel Essentials, Dresses, Basics, Body Suits, Co-ords, Tops, Bottoms, Male, Female, Kids, Accessories). When a user clicks a category icon, the system automatically tracks their last selected category. For new users or when no category has been selected, the system defaults to the first category. Use the `/api/categories/active` endpoint to get the user's active category (last selected or first category).
+> ** Important:** The system has 11 default categories (Travel Essentials, Dresses, Basics, Body Suits, Co-ords, Tops, Bottoms, Male, Female, Kids, Accessories). When a user clicks a category icon, the system automatically tracks their last selected category. For new users or when no category has been selected, the system defaults to the first category. Use the `/api/categories/active` endpoint to get the user's active category (last selected or first category).
 
 Base Path: `/api/categories`
 
@@ -1945,7 +1945,7 @@ curl -X DELETE http://localhost:3000/api/categories/675a1b2c3d4e5f6g7h8i9j0l \
 
 ---
 
-## 👤 User Management Endpoints
+##  User Management Endpoints
 
 Base Path: `/api/user`
 
@@ -2435,6 +2435,1533 @@ curl -X DELETE http://localhost:3000/api/user/favorites/675a1b2c3d4e5f6g7h8i9j0k
 
 ---
 
+## Shopping Cart Endpoints
+
+Base Path: `/api/cart`
+
+**All endpoints in this section require authentication.** Include the JWT token in the Authorization header.
+
+### 1. Get Cart
+
+**What it does:** Retrieves the authenticated user's shopping cart with all items, quantities, and calculated totals.
+
+**Endpoint:** `GET /api/cart`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "cart": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "items": [
+      {
+        "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+        "product": {
+          "_id": "675a1b2c3d4e5f6g7h8i9j0m",
+          "title": "Premium Suit",
+          "price": 2999.99,
+          "currency": "NGN",
+          "images": ["https://example.com/suit.jpg"],
+          "brand": "Gagnon"
+        },
+        "variant": {
+          "_id": "675a1b2c3d4e5f6g7h8i9j0n",
+          "size": "L",
+          "color": { "name": "Navy Blue", "hex": "#000080" },
+          "price": 2999.99,
+          "stock": 10
+        },
+        "size": "L",
+        "color": { "name": "Navy Blue", "hex": "#000080" },
+        "quantity": 2,
+        "price": 2999.99,
+        "subtotal": 5999.98
+      }
+    ],
+    "subtotal": 5999.98,
+    "itemCount": 1,
+    "totalItems": 2
+  }
+}
+```
+
+**Error Responses:**
+
+**401 - Unauthorized:**
+```json
+{
+  "success": false,
+  "message": "Not authorized to access this route"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl http://localhost:3000/api/cart \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 2. Add Item to Cart
+
+**What it does:** Adds a product (with or without variant) to the user's shopping cart. If the item already exists, it updates the quantity.
+
+**Endpoint:** `POST /api/cart`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "productId": "675a1b2c3d4e5f6g7h8i9j0m",
+  "variantId": "675a1b2c3d4e5f6g7h8i9j0n",
+  "quantity": 2
+}
+```
+
+**Field Requirements:**
+- `productId` (required): Product ID (MongoDB ObjectId)
+- `variantId` (optional): Product variant ID if product has variants
+- `size` (optional): Size string (legacy support, use variantId instead)
+- `color` (optional): Color object (legacy support, use variantId instead)
+- `quantity` (optional): Quantity to add (default: 1)
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "Item added to cart",
+  "cartItem": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+    "cart": "675a1b2c3d4e5f6g7h8i9j0k",
+    "product": "675a1b2c3d4e5f6g7h8i9j0m",
+    "variant": "675a1b2c3d4e5f6g7h8i9j0n",
+    "quantity": 2,
+    "price": 2999.99,
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+**If item already exists (200):**
+```json
+{
+  "success": true,
+  "message": "Cart updated",
+  "cartItem": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+    "quantity": 3
+  }
+}
+```
+
+**Error Responses:**
+
+**400 - Insufficient Stock:**
+```json
+{
+  "success": false,
+  "message": "Insufficient stock. Only 5 available."
+}
+```
+
+**404 - Product Not Found:**
+```json
+{
+  "success": false,
+  "message": "Product not found"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/cart \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": "675a1b2c3d4e5f6g7h8i9j0m",
+    "variantId": "675a1b2c3d4e5f6g7h8i9j0n",
+    "quantity": 2
+  }'
+```
+
+---
+
+### 3. Update Cart Item Quantity
+
+**What it does:** Updates the quantity of a specific item in the cart.
+
+**Endpoint:** `PUT /api/cart/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**URL Parameters:**
+- `id` (required): Cart item ID
+
+**Request Body:**
+```json
+{
+  "quantity": 3
+}
+```
+
+**Field Requirements:**
+- `quantity` (required): New quantity (must be at least 1)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Cart item updated",
+  "cartItem": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+    "quantity": 3,
+    "price": 2999.99
+  }
+}
+```
+
+**Error Responses:**
+
+**400 - Insufficient Stock:**
+```json
+{
+  "success": false,
+  "message": "Insufficient stock. Only 2 available."
+}
+```
+
+**404 - Cart Item Not Found:**
+```json
+{
+  "success": false,
+  "message": "Cart item not found"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X PUT http://localhost:3000/api/cart/675a1b2c3d4e5f6g7h8i9j0l \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity": 3}'
+```
+
+---
+
+### 4. Remove Item from Cart
+
+**What it does:** Removes a specific item from the cart.
+
+**Endpoint:** `DELETE /api/cart/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Cart item ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Item removed from cart"
+}
+```
+
+**Error Responses:**
+
+**404 - Cart Item Not Found:**
+```json
+{
+  "success": false,
+  "message": "Cart item not found"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X DELETE http://localhost:3000/api/cart/675a1b2c3d4e5f6g7h8i9j0l \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 5. Clear Cart
+
+**What it does:** Removes all items from the cart.
+
+**Endpoint:** `DELETE /api/cart`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Cart cleared"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X DELETE http://localhost:3000/api/cart \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Orders Endpoints
+
+Base Path: `/api/orders`
+
+**All endpoints in this section require authentication.** Include the JWT token in the Authorization header.
+
+### 1. Create Order from Cart
+
+**What it does:** Creates an order from the user's cart. This endpoint validates stock, calculates totals (subtotal, shipping, discount, tax), creates the order, reduces product stock, and clears the cart.
+
+**Endpoint:** `POST /api/orders`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "shippingAddressId": "675a1b2c3d4e5f6g7h8i9j0k",
+  "shippingMethodId": "675a1b2c3d4e5f6g7h8i9j0l",
+  "discountCode": "SAVE20",
+  "paymentMethod": "card",
+  "notes": "Please leave at front door"
+}
+```
+
+**Field Requirements:**
+- `shippingAddressId` (required): Address ID from user's addresses
+- `shippingMethodId` (required): Shipping method ID
+- `discountCode` (optional): Discount code to apply
+- `paymentMethod` (optional): Payment method (default: "card")
+- `notes` (optional): Order notes
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "Order created successfully",
+  "order": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0m",
+    "orderNumber": "ORD-XXXXX-XXXX",
+    "user": "675a1b2c3d4e5f6g7h8i9j0n",
+    "shippingAddress": {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+      "firstname": "John",
+      "lastname": "Doe",
+      "address": "123 Main Street",
+      "city": "Lagos",
+      "country": "Nigeria"
+    },
+    "shippingMethod": {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+      "name": "DHL EXPRESS INTERNATIONAL",
+      "deliveryTime": "10 business days"
+    },
+    "subtotal": 50000,
+    "shippingCost": 2000,
+    "discountCode": "SAVE20",
+    "discountAmount": 5000,
+    "tax": 0,
+    "total": 47000,
+    "currency": "NGN",
+    "status": "pending",
+    "paymentStatus": "pending",
+    "paymentMethod": "card",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  },
+  "orderItems": [...]
+}
+```
+
+**Error Responses:**
+
+**400 - Cart Empty:**
+```json
+{
+  "success": false,
+  "message": "Cart is empty"
+}
+```
+
+**400 - Insufficient Stock:**
+```json
+{
+  "success": false,
+  "message": "Insufficient stock for Premium Suit. Only 5 available."
+}
+```
+
+**404 - Address Not Found:**
+```json
+{
+  "success": false,
+  "message": "Shipping address not found"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/orders \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shippingAddressId": "675a1b2c3d4e5f6g7h8i9j0k",
+    "shippingMethodId": "675a1b2c3d4e5f6g7h8i9j0l",
+    "discountCode": "SAVE20",
+    "paymentMethod": "card"
+  }'
+```
+
+---
+
+### 2. Get User Orders
+
+**What it does:** Retrieves all orders for the authenticated user with optional filtering by status and pagination.
+
+**Endpoint:** `GET /api/orders`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Query Parameters:**
+- `status` (optional): Filter by order status (pending, confirmed, processing, shipped, delivered, cancelled, refunded)
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "orders": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0m",
+      "orderNumber": "ORD-XXXXX-XXXX",
+      "subtotal": 50000,
+      "total": 47000,
+      "status": "pending",
+      "paymentStatus": "pending",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "totalPages": 1,
+  "currentPage": 1,
+  "total": 1
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl "http://localhost:3000/api/orders?status=pending&page=1&limit=20" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 3. Get Order by ID
+
+**What it does:** Retrieves a specific order with all details including order items.
+
+**Endpoint:** `GET /api/orders/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Order ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "order": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0m",
+    "orderNumber": "ORD-XXXXX-XXXX",
+    "shippingAddress": {...},
+    "shippingMethod": {...},
+    "subtotal": 50000,
+    "total": 47000,
+    "status": "pending",
+    "paymentStatus": "pending"
+  },
+  "orderItems": [
+    {
+      "_id": "...",
+      "product": {
+        "_id": "...",
+        "title": "Premium Suit",
+        "images": [...]
+      },
+      "variant": {
+        "size": "L",
+        "color": {...}
+      },
+      "quantity": 2,
+      "price": 25000,
+      "subtotal": 50000
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+**404 - Order Not Found:**
+```json
+{
+  "success": false,
+  "message": "Order not found"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl http://localhost:3000/api/orders/675a1b2c3d4e5f6g7h8i9j0m \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 4. Get Order by Order Number
+
+**What it does:** Retrieves an order using its order number instead of ID.
+
+**Endpoint:** `GET /api/orders/number/:orderNumber`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `orderNumber` (required): Order number (e.g., "ORD-XXXXX-XXXX")
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "order": {...},
+  "orderItems": [...]
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl http://localhost:3000/api/orders/number/ORD-XXXXX-XXXX \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 5. Cancel Order
+
+**What it does:** Cancels a pending or confirmed order and restores product stock.
+
+**Endpoint:** `PUT /api/orders/:id/cancel`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Order ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Order cancelled",
+  "order": {
+    "_id": "...",
+    "status": "cancelled"
+  }
+}
+```
+
+**Error Responses:**
+
+**400 - Cannot Cancel:**
+```json
+{
+  "success": false,
+  "message": "Order cannot be cancelled at this stage"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X PUT http://localhost:3000/api/orders/675a1b2c3d4e5f6g7h8i9j0m/cancel \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 6. Get All Orders (Admin Only)
+
+**What it does:** Retrieves all orders in the system with optional filtering (Admin only).
+
+**Endpoint:** `GET /api/orders/admin/all`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+```
+
+**Query Parameters:**
+- `status` (optional): Filter by order status
+- `paymentStatus` (optional): Filter by payment status
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 50)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "orders": [...],
+  "totalPages": 1,
+  "currentPage": 1,
+  "total": 10
+}
+```
+
+---
+
+### 7. Update Order Status (Admin Only)
+
+**What it does:** Updates the order status, payment status, or estimated delivery date (Admin only).
+
+**Endpoint:** `PUT /api/orders/:id/status`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+```
+
+**URL Parameters:**
+- `id` (required): Order ID
+
+**Request Body:**
+```json
+{
+  "status": "shipped",
+  "paymentStatus": "paid",
+  "estimatedDelivery": "2024-01-25T00:00:00.000Z"
+}
+```
+
+**Field Requirements:**
+- `status` (optional): Order status (pending, confirmed, processing, shipped, delivered, cancelled, refunded)
+- `paymentStatus` (optional): Payment status (pending, paid, failed, refunded)
+- `estimatedDelivery` (optional): Estimated delivery date (ISO date string)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Order status updated",
+  "order": {
+    "_id": "...",
+    "status": "shipped",
+    "paymentStatus": "paid",
+    "estimatedDelivery": "2024-01-25T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+## Addresses Endpoints
+
+Base Path: `/api/addresses`
+
+**All endpoints in this section require authentication.** Include the JWT token in the Authorization header.
+
+### 1. Get All Addresses
+
+**What it does:** Retrieves all shipping addresses for the authenticated user. Default address is returned first.
+
+**Endpoint:** `GET /api/addresses`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "addresses": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+      "title": "Mr",
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "country": "Nigeria",
+      "region": "Lagos",
+      "city": "Lagos",
+      "address": "123 Main Street",
+      "postalCode": "100001",
+      "isDefault": true,
+      "addressType": "home",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl http://localhost:3000/api/addresses \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 2. Get Address by ID
+
+**What it does:** Retrieves a specific address by ID.
+
+**Endpoint:** `GET /api/addresses/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Address ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "address": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "firstname": "John",
+    "lastname": "Doe",
+    ...
+  }
+}
+```
+
+---
+
+### 3. Create Address
+
+**What it does:** Creates a new shipping address. If `isDefault` is true, it sets this as the default address and updates the user's profile.
+
+**Endpoint:** `POST /api/addresses`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "title": "Mr",
+  "firstname": "John",
+  "lastname": "Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "country": "Nigeria",
+  "region": "Lagos",
+  "city": "Lagos",
+  "address": "123 Main Street",
+  "postalCode": "100001",
+  "isDefault": true,
+  "addressType": "home"
+}
+```
+
+**Field Requirements:**
+- `firstname` (required): First name
+- `lastname` (required): Last name
+- `email` (required): Email address
+- `phone` (required): Phone number
+- `city` (required): City name
+- `address` (required): Street address
+- `title` (optional): Title (Mr, Mrs, Ms, Miss, Dr, Prof, or "")
+- `country` (optional): Country (default: "Nigeria")
+- `region` (optional): State/Province
+- `postalCode` (optional): Postal/ZIP code
+- `isDefault` (optional): Set as default address (default: false)
+- `addressType` (optional): Address type - "home", "work", or "other" (default: "home")
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "Address created",
+  "address": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "firstname": "John",
+    "lastname": "Doe",
+    "isDefault": true,
+    ...
+  }
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/addresses \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstname": "John",
+    "lastname": "Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "city": "Lagos",
+    "address": "123 Main Street",
+    "isDefault": true
+  }'
+```
+
+---
+
+### 4. Update Address
+
+**What it does:** Updates an existing address. If `isDefault` is set to true, it updates the default address.
+
+**Endpoint:** `PUT /api/addresses/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**URL Parameters:**
+- `id` (required): Address ID
+
+**Request Body:**
+```json
+{
+  "city": "Abuja",
+  "address": "456 New Street",
+  "isDefault": true
+}
+```
+
+**Note:** You can update any field. Only include fields you want to change.
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Address updated",
+  "address": {
+    "_id": "...",
+    "city": "Abuja",
+    "address": "456 New Street",
+    "isDefault": true
+  }
+}
+```
+
+---
+
+### 5. Set Default Address
+
+**What it does:** Sets a specific address as the default shipping address and updates the user's profile.
+
+**Endpoint:** `PUT /api/addresses/:id/default`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Address ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Default address updated",
+  "address": {
+    "_id": "...",
+    "isDefault": true
+  }
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X PUT http://localhost:3000/api/addresses/675a1b2c3d4e5f6g7h8i9j0k/default \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### 6. Delete Address
+
+**What it does:** Deletes an address. If it was the default address, it clears the user's default address reference.
+
+**Endpoint:** `DELETE /api/addresses/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Address ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Address deleted"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X DELETE http://localhost:3000/api/addresses/675a1b2c3d4e5f6g7h8i9j0k \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Shipping Endpoints
+
+Base Path: `/api/shipping`
+
+### 1. Get All Shipping Methods
+
+**What it does:** Retrieves all active shipping methods. Optionally filter by country.
+
+**Endpoint:** `GET /api/shipping`
+
+**Authentication:** Not required (public endpoint)
+
+**Query Parameters:**
+- `country` (optional): Filter by country (e.g., "Nigeria")
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "methods": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+      "name": "DHL EXPRESS INTERNATIONAL",
+      "description": "Fast international shipping",
+      "deliveryTime": "10 business days",
+      "deliveryTimeDays": 10,
+      "baseCost": 2000,
+      "costPerKg": 500,
+      "availableCountries": ["Nigeria", "Ghana"],
+      "minOrderValue": 50000,
+      "maxWeight": 30,
+      "isActive": true
+    }
+  ]
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl "http://localhost:3000/api/shipping?country=Nigeria"
+```
+
+---
+
+### 2. Get Shipping Method by ID
+
+**What it does:** Retrieves a specific shipping method by ID.
+
+**Endpoint:** `GET /api/shipping/:id`
+
+**Authentication:** Not required (public endpoint)
+
+**URL Parameters:**
+- `id` (required): Shipping method ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "method": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "name": "DHL EXPRESS INTERNATIONAL",
+    ...
+  }
+}
+```
+
+---
+
+### 3. Calculate Shipping Cost
+
+**What it does:** Calculates the shipping cost for a given shipping method, weight, and order value. Applies free shipping if order value meets minimum.
+
+**Endpoint:** `POST /api/shipping/calculate`
+
+**Authentication:** Not required (public endpoint)
+
+**Request Headers:**
+```http
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "methodId": "675a1b2c3d4e5f6g7h8i9j0k",
+  "weight": 2.5,
+  "orderValue": 50000,
+  "country": "Nigeria"
+}
+```
+
+**Field Requirements:**
+- `methodId` (required): Shipping method ID
+- `weight` (optional): Package weight in kg
+- `orderValue` (optional): Order subtotal (for free shipping check)
+- `country` (optional): Shipping country
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "cost": 0,
+  "method": "DHL EXPRESS INTERNATIONAL",
+  "deliveryTime": "10 business days",
+  "deliveryTimeDays": 10,
+  "message": "Free shipping applied"
+}
+```
+
+**Or if not free:**
+```json
+{
+  "success": true,
+  "cost": 3250,
+  "method": "DHL EXPRESS INTERNATIONAL",
+  "deliveryTime": "10 business days",
+  "deliveryTimeDays": 10
+}
+```
+
+**Error Responses:**
+
+**400 - Method Not Available:**
+```json
+{
+  "success": false,
+  "message": "Shipping method not available for this country"
+}
+```
+
+**400 - Weight Exceeds Limit:**
+```json
+{
+  "success": false,
+  "message": "Weight exceeds maximum allowed (30kg)"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/shipping/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "methodId": "675a1b2c3d4e5f6g7h8i9j0k",
+    "weight": 2.5,
+    "orderValue": 50000
+  }'
+```
+
+---
+
+### 4. Create Shipping Method (Admin Only)
+
+**What it does:** Creates a new shipping method (Admin only).
+
+**Endpoint:** `POST /api/shipping`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "name": "Standard Shipping",
+  "description": "Standard delivery service",
+  "deliveryTime": "5-7 business days",
+  "deliveryTimeDays": 6,
+  "baseCost": 1000,
+  "costPerKg": 200,
+  "availableCountries": ["Nigeria"],
+  "minOrderValue": 30000,
+  "maxWeight": 20,
+  "icon": "https://example.com/icon.png"
+}
+```
+
+**Field Requirements:**
+- `name` (required): Shipping method name (must be unique)
+- `description` (optional): Description
+- `deliveryTime` (optional): Delivery time string (e.g., "5-7 business days")
+- `deliveryTimeDays` (optional): Number of days for calculation
+- `baseCost` (optional): Base shipping cost (default: 0)
+- `costPerKg` (optional): Cost per kilogram (default: 0)
+- `availableCountries` (optional): Array of country names (empty = all countries)
+- `minOrderValue` (optional): Minimum order value for free shipping (default: 0)
+- `maxWeight` (optional): Maximum weight in kg
+- `icon` (optional): Icon URL
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "Shipping method created",
+  "method": {
+    "_id": "...",
+    "name": "Standard Shipping",
+    "isActive": true,
+    ...
+  }
+}
+```
+
+---
+
+### 5. Update Shipping Method (Admin Only)
+
+**What it does:** Updates an existing shipping method (Admin only).
+
+**Endpoint:** `PUT /api/shipping/:id`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+```
+
+**URL Parameters:**
+- `id` (required): Shipping method ID
+
+**Request Body:**
+```json
+{
+  "baseCost": 1500,
+  "isActive": false
+}
+```
+
+**Note:** You can update any field. Only include fields you want to change.
+
+---
+
+### 6. Delete Shipping Method (Admin Only)
+
+**What it does:** Deletes a shipping method (Admin only).
+
+**Endpoint:** `DELETE /api/shipping/:id`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Shipping method ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Shipping method deleted"
+}
+```
+
+---
+
+## Discounts Endpoints
+
+Base Path: `/api/discounts`
+
+### 1. Validate Discount Code
+
+**What it does:** Validates a discount code and returns discount information without applying it. This is a public endpoint.
+
+**Endpoint:** `POST /api/discounts/validate`
+
+**Authentication:** Not required (public endpoint)
+
+**Request Headers:**
+```http
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "code": "SAVE20",
+  "orderValue": 50000,
+  "productIds": ["675a1b2c3d4e5f6g7h8i9j0k"],
+  "categoryIds": ["675a1b2c3d4e5f6g7h8i9j0l"]
+}
+```
+
+**Field Requirements:**
+- `code` (required): Discount code
+- `orderValue` (optional): Order subtotal (for discount calculation)
+- `productIds` (optional): Array of product IDs (for product-specific codes)
+- `categoryIds` (optional): Array of category IDs (for category-specific codes)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "valid": true,
+  "discountCode": {
+    "code": "SAVE20",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "discountAmount": 10000,
+    "description": "Save 20% on your order"
+  }
+}
+```
+
+**Error Responses:**
+
+**404 - Invalid Code:**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired discount code"
+}
+```
+
+**400 - Minimum Order Value:**
+```json
+{
+  "success": false,
+  "message": "Minimum order value of 30000 required for this code"
+}
+```
+
+**400 - Not Applicable:**
+```json
+{
+  "success": false,
+  "message": "Discount code does not apply to selected products"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/discounts/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "SAVE20",
+    "orderValue": 50000
+  }'
+```
+
+---
+
+### 2. Apply Discount Code
+
+**What it does:** Applies a discount code and increments its usage count. This should be called when the discount is actually used in an order.
+
+**Endpoint:** `POST /api/discounts/apply`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "code": "SAVE20",
+  "orderValue": 50000,
+  "productIds": ["675a1b2c3d4e5f6g7h8i9j0k"],
+  "categoryIds": ["675a1b2c3d4e5f6g7h8i9j0l"],
+  "userId": "675a1b2c3d4e5f6g7h8i9j0m"
+}
+```
+
+**Field Requirements:**
+- `code` (required): Discount code
+- `orderValue` (optional): Order subtotal
+- `productIds` (optional): Array of product IDs
+- `categoryIds` (optional): Array of category IDs
+- `userId` (optional): User ID (for per-user limit tracking)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Discount code applied",
+  "discount": {
+    "code": "SAVE20",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "discountAmount": 10000,
+    "description": "Save 20% on your order"
+  }
+}
+```
+
+**Note:** The discount code usage count is incremented when this endpoint is called. However, in the order creation flow, the discount is automatically applied when creating an order, so this endpoint is optional.
+
+---
+
+### 3. Get All Discount Codes (Admin Only)
+
+**What it does:** Retrieves all discount codes with optional filtering (Admin only).
+
+**Endpoint:** `GET /api/discounts`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+```
+
+**Query Parameters:**
+- `active` (optional): Filter by active status (true/false)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "codes": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+      "code": "SAVE20",
+      "discountType": "percentage",
+      "discountValue": 20,
+      "minOrderValue": 30000,
+      "validFrom": "2024-01-01T00:00:00.000Z",
+      "validUntil": "2024-12-31T23:59:59.999Z",
+      "usageLimit": 1000,
+      "usageCount": 45,
+      "isActive": true
+    }
+  ]
+}
+```
+
+---
+
+### 4. Create Discount Code (Admin Only)
+
+**What it does:** Creates a new discount code (Admin only).
+
+**Endpoint:** `POST /api/discounts`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "code": "SAVE20",
+  "description": "Save 20% on your order",
+  "discountType": "percentage",
+  "discountValue": 20,
+  "minOrderValue": 30000,
+  "maxDiscount": 5000,
+  "validFrom": "2024-01-01T00:00:00.000Z",
+  "validUntil": "2024-12-31T23:59:59.999Z",
+  "usageLimit": 1000,
+  "userLimit": 1,
+  "applicableCategories": ["675a1b2c3d4e5f6g7h8i9j0k"],
+  "applicableProducts": ["675a1b2c3d4e5f6g7h8i9j0l"]
+}
+```
+
+**Field Requirements:**
+- `code` (required): Discount code (will be converted to uppercase, must be unique)
+- `discountType` (required): "percentage" or "fixed"
+- `discountValue` (required): Percentage (0-100) or fixed amount
+- `validFrom` (required): Start date (ISO date string)
+- `validUntil` (required): End date (ISO date string)
+- `description` (optional): Code description
+- `minOrderValue` (optional): Minimum order value (default: 0)
+- `maxDiscount` (optional): Maximum discount amount (for percentage codes)
+- `usageLimit` (optional): Total usage limit (null = unlimited)
+- `userLimit` (optional): Usage limit per user (default: 1)
+- `applicableCategories` (optional): Array of category IDs (empty = all categories)
+- `applicableProducts` (optional): Array of product IDs (empty = all products)
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "Discount code created",
+  "code": {
+    "_id": "...",
+    "code": "SAVE20",
+    "isActive": true,
+    ...
+  }
+}
+```
+
+---
+
+### 5. Update Discount Code (Admin Only)
+
+**What it does:** Updates an existing discount code (Admin only).
+
+**Endpoint:** `PUT /api/discounts/:id`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+```
+
+**URL Parameters:**
+- `id` (required): Discount code ID
+
+**Request Body:**
+```json
+{
+  "isActive": false,
+  "usageLimit": 2000
+}
+```
+
+**Note:** You can update any field. Only include fields you want to change.
+
+---
+
+### 6. Delete Discount Code (Admin Only)
+
+**What it does:** Deletes a discount code (Admin only).
+
+**Endpoint:** `DELETE /api/discounts/:id`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Discount code ID
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Discount code deleted"
+}
+```
+
+---
+
 ## Data Models
 
 ### User Model
@@ -2826,7 +4353,7 @@ node backend/test-2fa.js
 
 ---
 
-## 🔄 API Versioning
+##  API Versioning
 
 Currently, the API is at **version 1.0.0**. Future versions will be indicated in the URL:
 
@@ -2835,7 +4362,7 @@ Currently, the API is at **version 1.0.0**. Future versions will be indicated in
 
 ---
 
-## 📞 Support & Contact
+##  Support & Contact
 
 For issues, questions, or feature requests:
 
