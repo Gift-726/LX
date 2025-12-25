@@ -306,7 +306,7 @@ All API endpoints start with: `http://localhost:3000/api`
 
 ---
 
-## 🔑 Authentication Endpoints
+## Authentication Endpoints
 
 Base Path: `/api/auth`
 
@@ -1036,7 +1036,7 @@ curl -X POST http://localhost:3000/api/auth/reset-password \
 
 ---
 
-## 📦 Products Endpoints
+## Products Endpoints
 
 Base Path: `/api/products`
 
@@ -1057,7 +1057,7 @@ Base Path: `/api/products`
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20)
 
-> **🔍 Search Feature:** When a user searches (authenticated), the search query is automatically saved to their search history. No need to manually call the save search history endpoint. Duplicate searches within 1 hour are not saved to prevent spam.
+**Search Feature:** When a user searches (authenticated), the search query is automatically saved to their search history. No need to manually call the save search history endpoint. Duplicate searches within 1 hour are not saved to prevent spam.
 
 **Example Requests:**
 ```http
@@ -1949,7 +1949,7 @@ curl -X DELETE http://localhost:3000/api/categories/675a1b2c3d4e5f6g7h8i9j0l \
 
 Base Path: `/api/user`
 
-> **⚠️ All endpoints in this section require authentication.** Include the JWT token in the Authorization header.
+**All endpoints in this section require authentication.** Include the JWT token in the Authorization header.
 
 ### 1. Get User Profile
 
@@ -2005,7 +2005,7 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
-> **📝 Note:** The `lastSelectedCategory` field is automatically updated when the user accesses a category via `GET /api/categories/:id` or `GET /api/categories/active`. The `defaultAddress` field references the user's default shipping address (if set).
+**Note:** The `lastSelectedCategory` field is automatically updated when the user accesses a category via `GET /api/categories/:id` or `GET /api/categories/active`. The `defaultAddress` field references the user's default shipping address (if set).
 
 **Error Responses:**
 
@@ -2119,7 +2119,7 @@ curl -X PUT http://localhost:3000/api/user/profile \
   }'
 ```
 
-> **💡 Tip:** To set a default address, use the `PUT /api/addresses/:id/default` endpoint. The `defaultAddress` field in the user profile will be automatically updated.
+**Tip:** To set a default address, use the `PUT /api/addresses/:id/default` endpoint. The `defaultAddress` field in the user profile will be automatically updated.
 
 ---
 
@@ -2157,7 +2157,7 @@ curl -X PUT http://localhost:3000/api/user/profile \
 }
 ```
 
-> **📝 Note:** Search history is automatically saved when authenticated users search using the `GET /api/products?search=<query>` endpoint. You can still manually save searches using `POST /api/user/search-history`, but it's not necessary for most use cases.
+**Note:** Search history is automatically saved when authenticated users search using the `GET /api/products?search=<query>` endpoint. You can still manually save searches using `POST /api/user/search-history`, but it's not necessary for most use cases.
 
 ---
 
@@ -2184,7 +2184,7 @@ curl -X PUT http://localhost:3000/api/user/profile \
 }
 ```
 
-> **💡 Tip:** Search history is automatically saved when authenticated users search using `GET /api/products?search=<query>`. This manual endpoint is useful for saving searches from other sources or for custom search implementations.
+**Tip:** Search history is automatically saved when authenticated users search using `GET /api/products?search=<query>`. This manual endpoint is useful for saving searches from other sources or for custom search implementations.
 
 ---
 
@@ -2435,7 +2435,7 @@ curl -X DELETE http://localhost:3000/api/user/favorites/675a1b2c3d4e5f6g7h8i9j0k
 
 ---
 
-## 🗄️ Data Models
+## Data Models
 
 ### User Model
 
@@ -2507,7 +2507,7 @@ curl -X DELETE http://localhost:3000/api/user/favorites/675a1b2c3d4e5f6g7h8i9j0k
 }
 ```
 
-> **📝 Note:** 
+**Note:** 
 > - If `hasVariants` is `true`, the product will have variants stored in the `ProductVariant` model. The `stock` field represents the total stock across all variants.
 > - `calculatedBadges` are automatically computed based on product properties (e.g., discount percentage, release date, sales count).
 > - `isInFavorites` is only included in responses for authenticated users.
@@ -2568,7 +2568,7 @@ curl -X DELETE http://localhost:3000/api/user/favorites/675a1b2c3d4e5f6g7h8i9j0k
 
 ---
 
-## ⚠️ Error Handling
+## Error Handling
 
 ### HTTP Status Codes
 
@@ -2681,7 +2681,7 @@ All error responses follow this format:
 
 ---
 
-## 💡 Best Practices
+## Best Practices
 
 ### For Frontend Developers
 
@@ -2740,7 +2740,7 @@ All error responses follow this format:
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Test Scripts
 
@@ -2781,7 +2781,7 @@ node backend/test-2fa.js
 
 ---
 
-## 📝 Important Notes
+## Important Notes
 
 ### Email Configuration
 
@@ -2845,7 +2845,7 @@ For issues, questions, or feature requests:
 
 ---
 
-## 📄 License
+## License
 
 This API is proprietary software. All rights reserved.
 
@@ -2857,15 +2857,15 @@ This API is proprietary software. All rights reserved.
 
 ---
 
-## 📝 Changelog
+## Changelog
 
 ### Version 1.1.0 (January 2025)
-- ✅ Added automatic search history saving for authenticated users
-- ✅ Enhanced search functionality with case-insensitive regex matching
-- ✅ Added Featured Products endpoint
-- ✅ Added Active Category endpoint
-- ✅ Added Update and Delete Category endpoints
-- ✅ Updated Product model documentation with badges and featured fields
-- ✅ Updated Category model with icon and displayOrder fields
-- ✅ Improved search history response format documentation
-- ✅ Added seed scripts documentation for categories and products
+- Added automatic search history saving for authenticated users
+- Enhanced search functionality with case-insensitive regex matching
+- Added Featured Products endpoint
+- Added Active Category endpoint
+- Added Update and Delete Category endpoints
+- Updated Product model documentation with badges and featured fields
+- Updated Category model with icon and displayOrder fields
+- Improved search history response format documentation
+- Added seed scripts documentation for categories and products
