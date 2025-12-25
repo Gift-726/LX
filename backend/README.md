@@ -1,8 +1,8 @@
-# McGeorge LX - Backend API
+# LX - Backend API
 
 A comprehensive e-commerce backend API built with Node.js, Express, and MongoDB. Features secure two-factor authentication (2FA), product management, category organization, and user management.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -59,7 +59,7 @@ A comprehensive e-commerce backend API built with Node.js, Express, and MongoDB.
 
 The server will start on `http://localhost:3000`
 
-## 📚 Documentation
+## Documentation
 
 Complete API documentation is available in the `docs/` folder:
 
@@ -67,7 +67,7 @@ Complete API documentation is available in the `docs/` folder:
 - **[Authentication Guide](./docs/AUTHENTICATION_GUIDE.md)** - Authentication flow details
 - **[2FA Implementation](./docs/2FA_IMPLEMENTATION_GUIDE.md)** - Two-factor authentication guide
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 backend/
@@ -101,7 +101,7 @@ backend/
 └── package.json    # Dependencies
 ```
 
-## 🔐 Authentication
+## Authentication
 
 The API uses **Two-Factor Authentication (2FA)** for enhanced security:
 
@@ -118,7 +118,7 @@ The API uses **Two-Factor Authentication (2FA)** for enhanced security:
    - Facebook OAuth
    - OAuth users are automatically verified
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -152,15 +152,15 @@ The API uses **Two-Factor Authentication (2FA)** for enhanced security:
 - `GET /api/user/notifications/unread-count` - Get unread count
 - `PUT /api/user/notifications/:id/read` - Mark as read
 
-## 🔑 Admin Access
+## Admin Access
 
 **Default Admin Credentials:**
 - Email: `gianosamsung@gmail.com`
-- Password: `Admin@McGeorge2024`
+- Password: `Admin@LX2024`
 
-> ⚠️ **Important:** Only this email automatically receives admin privileges.
+**Important:** Only this email automatically receives admin privileges.
 
-## 🧪 Testing
+## Testing
 
 ### Test Email Configuration
 ```bash
@@ -189,7 +189,7 @@ node scripts/test-2fa.js
 node test-2fa.js
 ```
 
-## 📦 Dependencies
+## Dependencies
 
 ### Core
 - **express** - Web framework
@@ -210,18 +210,18 @@ node test-2fa.js
 - **cors** - Cross-origin resource sharing
 - **nodemon** - Development auto-reload (dev dependency)
 
-## 🔒 Security Features
+## Security Features
 
-- ✅ Two-Factor Authentication (2FA)
-- ✅ Password hashing with bcrypt
-- ✅ JWT token-based authentication
-- ✅ Email verification
-- ✅ Secure password reset
-- ✅ Input validation
-- ✅ CORS protection
-- ✅ Admin role-based access control
+- Two-Factor Authentication (2FA)
+- Password hashing with bcrypt
+- JWT token-based authentication
+- Email verification
+- Secure password reset
+- Input validation
+- CORS protection
+- Admin role-based access control
 
-## 📝 Environment Variables
+## Environment Variables
 
 See `.env.example` for all required environment variables.
 
@@ -238,7 +238,7 @@ See `.env.example` for all required environment variables.
 - `FACEBOOK_APP_ID` - For Facebook OAuth
 - `FACEBOOK_APP_SECRET` - For Facebook OAuth
 
-## 🛠️ Development
+## Development
 
 ### Running in Development Mode
 ```bash
@@ -255,11 +255,11 @@ This uses `nodemon` to automatically restart the server on file changes.
 - **Middleware** - Authentication and authorization
 - **Config** - Configuration files
 
-## 📄 License
+## License
 
 Proprietary - All rights reserved
 
-## 👥 Support
+## Support
 
 For issues or questions:
 - Check the [API Documentation](./docs/API_DOCUMENTATION.md)

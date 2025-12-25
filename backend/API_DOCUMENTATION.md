@@ -1,12 +1,12 @@
-# McGeorge LX - Complete API Documentation
+# LX - Complete API Documentation
 
 **Version:** 1.0.0  
 **Base URL:** `http://localhost:3000/api`  
-**Last Updated:** 2025
+**Last Updated:** January 2025
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Getting Started](#getting-started)
@@ -23,23 +23,27 @@
 
 ---
 
-## 🎯 Introduction
+## Introduction
 
-### What is McGeorge LX API?
+### What is LX API?
 
-McGeorge LX is a comprehensive e-commerce backend API that provides secure authentication, product management, category organization, and user features. The API is designed with security in mind, featuring two-factor authentication (2FA) for all user accounts.
+LX is a comprehensive e-commerce backend API that provides secure authentication, product management, category organization, and user features. The API is designed with security in mind, featuring two-factor authentication (2FA) for all user accounts.
 
 ### Key Features
 
-- ✅ **Two-Factor Authentication (2FA)** - Secure login and registration with email verification
-- ✅ **Gmail Integration** - Professional email delivery for verification codes
-- ✅ **OAuth Support** - Google and Facebook social login
-- ✅ **Password Reset** - Secure password recovery via email
-- ✅ **Product Management** - Full CRUD operations for products
-- ✅ **Category Management** - Hierarchical category system
-- ✅ **User Profiles** - User information and preferences
-- ✅ **Search History** - Track user search queries
-- ✅ **Notifications** - User notification system
+- Two-Factor Authentication (2FA) - Secure login and registration with email verification
+- Gmail Integration - Professional email delivery for verification codes
+- OAuth Support - Google and Facebook social login
+- Password Reset - Secure password recovery via email
+- Product Management - Full CRUD operations for products with search, filtering, and badges
+- Category Management - Hierarchical category system with 11 default categories
+- User Profiles - User information and preferences with last selected category tracking
+- Search Functionality - Advanced product search with automatic history saving
+- Search History - Automatic tracking of user search queries
+- Favorites System - Save and manage favorite products
+- Notifications - User notification system
+- Featured Products - Highlight special offers and featured items
+- Product Badges - Dynamic badges (HOT, NEW, SALE, LIMITED) based on product properties
 
 ### Who Can Use This Documentation?
 
@@ -51,7 +55,7 @@ McGeorge LX is a comprehensive e-commerce backend API that provides secure authe
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -80,7 +84,9 @@ PORT=3000
 NODE_ENV=development
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/mcgeorge-lx
+MONGO_URI=mongodb://localhost:27017/lx
+# OR for MongoDB Atlas:
+# MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/lx
 
 # JWT Secret (use a strong random string)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -96,7 +102,7 @@ FACEBOOK_APP_ID=your-facebook-app-id
 FACEBOOK_APP_SECRET=your-facebook-app-secret
 ```
 
-> **📧 Gmail Setup:** To get an App Password, go to [Google App Passwords](https://myaccount.google.com/apppasswords) and generate one for "Mail".
+**Gmail Setup:** To get an App Password, go to [Google App Passwords](https://myaccount.google.com/apppasswords) and generate one for "Mail".
 
 #### Step 3: Seed the Database
 
@@ -104,6 +110,18 @@ Create the admin account:
 ```bash
 node backend/seed-admin.js
 ```
+
+Seed default categories (11 categories):
+```bash
+node backend/scripts/seedCategories.js
+```
+
+Seed products for categories (5-8 products per category):
+```bash
+node backend/scripts/seedProducts.js
+```
+
+> **Note:** Make sure your `MONGO_URI` is set in the `.env` file before running seed scripts.
 
 #### Step 4: Start the Server
 ```bash
@@ -119,11 +137,11 @@ node backend/test-api.js
 
 ---
 
-## 🔐 Authentication & Security
+## Authentication & Security
 
 ### Overview
 
-McGeorge LX uses **Two-Factor Authentication (2FA)** for enhanced security. This means:
+LX uses **Two-Factor Authentication (2FA)** for enhanced security. This means:
 
 1. Users must verify their email during registration
 2. Users must verify their email during login
@@ -185,22 +203,106 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### Admin Access
 
 **Admin Email:** `gianosamsung@gmail.com`  
-**Admin Password:** `Admin@McGeorge2024`
+**Admin Password:** `Admin@LX2024`
 
-> ⚠️ **Important:** Only this email address automatically receives admin privileges. All other users are regular users.
+**Important:** Only this email address automatically receives admin privileges. All other users are regular users.
 
 **Admin Capabilities:**
 - Create, update, and delete products
-- Create categories
+- Create, update, and delete categories
 - Full access to all endpoints
 
 ---
 
-## 📚 API Endpoints
+## API Endpoints
 
 ### Base URL
 
 All API endpoints start with: `http://localhost:3000/api`
+
+### Quick Reference - All Endpoints
+
+#### Authentication (`/api/auth`)
+- `POST /api/auth/register` - Register new user (Step 1)
+- `POST /api/auth/verify-registration` - Verify registration code (Step 2)
+- `POST /api/auth/login` - Login user (Step 1)
+- `POST /api/auth/verify-login` - Verify login code (Step 2)
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/verify-reset-code` - Verify reset code (optional)
+- `POST /api/auth/reset-password` - Reset password
+- `GET /api/auth/google` - Google OAuth login
+- `GET /api/auth/facebook` - Facebook OAuth login
+
+#### Products (`/api/products`)
+- `GET /api/products` - Get all products (with search, filters, pagination)
+- `GET /api/products/featured` - Get featured products
+- `GET /api/products/recommended` - Get recommended products
+- `GET /api/products/:id` - Get product by ID (includes variants)
+- `POST /api/products` - Create product (Admin only)
+- `PUT /api/products/:id` - Update product (Admin only)
+- `DELETE /api/products/:id` - Delete product (Admin only)
+
+#### Categories (`/api/categories`)
+- `GET /api/categories` - Get all categories
+- `GET /api/categories/top-level` - Get top-level categories only
+- `GET /api/categories/active` - Get user's active category (last selected or first)
+- `GET /api/categories/:id` - Get category by ID
+- `POST /api/categories` - Create category (Admin only)
+- `PUT /api/categories/:id` - Update category (Admin only)
+- `DELETE /api/categories/:id` - Delete category (Admin only)
+
+#### User Management (`/api/user`)
+- `GET /api/user/profile` - Get user profile
+- `PUT /api/user/profile` - Update user profile
+- `GET /api/user/search-history` - Get search history
+- `POST /api/user/search-history` - Save search history (optional, auto-saved on search)
+- `DELETE /api/user/search-history` - Clear search history
+- `GET /api/user/notifications` - Get notifications
+- `GET /api/user/notifications/unread-count` - Get unread notification count
+- `PUT /api/user/notifications/:id/read` - Mark notification as read
+- `GET /api/user/favorites` - Get favorites
+- `POST /api/user/favorites` - Add to favorites
+- `DELETE /api/user/favorites/:id` - Remove from favorites
+
+#### Shopping Cart (`/api/cart`)
+- `GET /api/cart` - Get cart with all items and totals
+- `POST /api/cart` - Add item to cart
+- `PUT /api/cart/:id` - Update cart item quantity
+- `DELETE /api/cart/:id` - Remove item from cart
+- `DELETE /api/cart` - Clear entire cart
+
+#### Orders (`/api/orders`)
+- `POST /api/orders` - Create order from cart
+- `GET /api/orders` - Get user's orders (with filters)
+- `GET /api/orders/:id` - Get order by ID
+- `GET /api/orders/number/:orderNumber` - Get order by order number
+- `PUT /api/orders/:id/cancel` - Cancel order
+- `GET /api/orders/admin/all` - Get all orders (Admin only)
+- `PUT /api/orders/:id/status` - Update order status (Admin only)
+
+#### Addresses (`/api/addresses`)
+- `GET /api/addresses` - Get all user addresses
+- `GET /api/addresses/:id` - Get address by ID
+- `POST /api/addresses` - Create new address
+- `PUT /api/addresses/:id` - Update address
+- `PUT /api/addresses/:id/default` - Set as default address
+- `DELETE /api/addresses/:id` - Delete address
+
+#### Shipping (`/api/shipping`)
+- `GET /api/shipping` - Get all active shipping methods
+- `GET /api/shipping/:id` - Get shipping method by ID
+- `POST /api/shipping/calculate` - Calculate shipping cost
+- `POST /api/shipping` - Create shipping method (Admin only)
+- `PUT /api/shipping/:id` - Update shipping method (Admin only)
+- `DELETE /api/shipping/:id` - Delete shipping method (Admin only)
+
+#### Discounts (`/api/discounts`)
+- `POST /api/discounts/validate` - Validate discount code (public)
+- `POST /api/discounts/apply` - Apply discount code (authenticated)
+- `GET /api/discounts` - Get all discount codes (Admin only)
+- `POST /api/discounts` - Create discount code (Admin only)
+- `PUT /api/discounts/:id` - Update discount code (Admin only)
+- `DELETE /api/discounts/:id` - Delete discount code (Admin only)
 
 ---
 
@@ -402,7 +504,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 curl -X POST http://localhost:3000/api/auth/verify-registration \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "john@example.com",
+  "email": "john@example.com",
     "code": "123456"
   }'
 ```
@@ -948,15 +1050,27 @@ Base Path: `/api/products`
 
 **Query Parameters:**
 - `category` (optional): Filter by category ID
-- `search` (optional): Search in title, description, and tags
+- `search` (optional): Search in title, description, and tags (case-insensitive). **Automatically saves to search history for authenticated users.**
 - `minPrice` (optional): Minimum price filter
 - `maxPrice` (optional): Maximum price filter
 - `tags` (optional): Comma-separated tags (e.g., "Men,Casual")
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20)
 
-**Example Request:**
+> **🔍 Search Feature:** When a user searches (authenticated), the search query is automatically saved to their search history. No need to manually call the save search history endpoint. Duplicate searches within 1 hour are not saved to prevent spam.
+
+**Example Requests:**
 ```http
+# Get all products
+GET /api/products?page=1&limit=20
+
+# Search for products
+GET /api/products?search=dress&page=1&limit=20
+
+# Filter by category
+GET /api/products?category=675a1b2c3d4e5f6g7h8i9j0k&page=1&limit=20
+
+# Combined filters
 GET /api/products?category=675a1b2c3d4e5f6g7h8i9j0k&search=shirt&minPrice=100&maxPrice=1000&tags=Men,Casual&page=1&limit=20
 ```
 
@@ -985,6 +1099,8 @@ GET /api/products?category=675a1b2c3d4e5f6g7h8i9j0k&search=shirt&minPrice=100&ma
       "rating": 4.5,
       "stock": 50,
       "createdBy": "675a1b2c3d4e5f6g7h8i9j0m",
+      "calculatedBadges": ["HOT", "SALE"],
+      "isInFavorites": false,
       "createdAt": "2024-01-15T10:30:00.000Z",
       "updatedAt": "2024-01-15T10:30:00.000Z"
     }
@@ -1002,7 +1118,51 @@ curl -X GET "http://localhost:3000/api/products?page=1&limit=20"
 
 ---
 
-### 2. Get Recommended Products
+### 2. Get Featured Products
+
+**What it does:** Retrieves featured products (for "Best Offer" banners and special promotions).
+
+**Endpoint:** `GET /api/products/featured`
+
+**Authentication:** Not required
+
+**Query Parameters:**
+- `limit` (optional): Number of products to return (default: 10)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "products": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+      "title": "Premium Suit",
+      "description": "High-quality business suit",
+      "price": 2999.99,
+      "currency": "NGN",
+      "discountPercentage": 15,
+      "category": {
+        "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+        "name": "Formal Wear",
+        "image": "https://example.com/category.jpg"
+      },
+      "images": ["https://example.com/suit1.jpg"],
+      "tags": ["Men", "Formal"],
+      "rating": 4.5,
+      "stock": 50,
+      "isFeatured": true,
+      "calculatedBadges": ["HOT", "SALE"],
+      "isInFavorites": false
+    }
+  ]
+}
+```
+
+> **Note:** Only products with `isFeatured: true` and valid `featuredUntil` dates (or null) are returned. Products are sorted by `featuredAt` date (most recent first).
+
+---
+
+### 3. Get Recommended Products
 
 **What it does:** Retrieves recommended products (currently returns most recent products).
 
@@ -1038,7 +1198,7 @@ curl -X GET "http://localhost:3000/api/products?page=1&limit=20"
 
 ---
 
-### 3. Get Product by ID
+### 4. Get Product by ID
 
 **What it does:** Retrieves detailed information about a specific product.
 
@@ -1073,6 +1233,8 @@ curl -X GET "http://localhost:3000/api/products?page=1&limit=20"
     "rating": 4.5,
     "stock": 50,
     "createdBy": "675a1b2c3d4e5f6g7h8i9j0m",
+    "calculatedBadges": ["HOT", "SALE"],
+    "isInFavorites": false,
     "createdAt": "2024-01-15T10:30:00.000Z",
     "updatedAt": "2024-01-15T10:30:00.000Z"
   }
@@ -1100,7 +1262,7 @@ curl -X GET "http://localhost:3000/api/products?page=1&limit=20"
 
 ---
 
-### 4. Create Product
+### 5. Create Product
 
 **What it does:** Creates a new product (Admin only).
 
@@ -1121,27 +1283,42 @@ Content-Type: application/json
   "description": "High-quality business suit made from premium materials",
   "price": 2999.99,
   "currency": "NGN",
+  "displayCurrency": "USD",
+  "displayPrice": 56.99,
   "discountPercentage": 15,
   "category": "675a1b2c3d4e5f6g7h8i9j0l",
+  "brand": "Gagnon",
+  "releaseDate": "2024-01-15T00:00:00.000Z",
   "images": [
     "https://example.com/suit1.jpg",
     "https://example.com/suit2.jpg"
   ],
   "tags": ["Men", "Formal", "Business"],
-  "stock": 50
+  "stock": 50,
+  "hasVariants": false,
+  "badges": ["NEW", "HOT"]
 }
 ```
 
 **Field Requirements:**
 - `title` (required): Product name
 - `description` (required): Product description
-- `price` (required): Product price (number)
+- `price` (required): Base product price (number)
 - `category` (required): Valid category ID (MongoDB ObjectId)
 - `currency` (optional): Currency code (default: "NGN")
+- `displayCurrency` (optional): Display currency (e.g., "USD", default: "USD")
+- `displayPrice` (optional): Display price in displayCurrency
+- `brand` (optional): Brand name (e.g., "Gagnon")
+- `releaseDate` (optional): Product release date (ISO date string, e.g., "2024-01-15T00:00:00.000Z")
 - `discountPercentage` (optional): Discount percentage (default: 0)
 - `images` (optional): Array of image URLs
 - `tags` (optional): Array of tag strings
-- `stock` (optional): Stock quantity (default: 0)
+- `stock` (optional): Total stock quantity (default: 0). If `hasVariants` is true, this represents the sum of all variant stock.
+- `hasVariants` (optional): Whether product has size/color variants (default: false). If true, create variants separately using ProductVariant model.
+- `badges` (optional): Array of manual badges: ["HOT", "NEW", "SALE", "BESTSELLER", "LIMITED"]
+- `isFeatured` (optional): Whether product is featured (default: false)
+- `featuredAt` (optional): When product was featured (Date)
+- `featuredUntil` (optional): Feature expiry date (Date)
 
 **Success Response (201):**
 ```json
@@ -1227,7 +1404,7 @@ curl -X POST http://localhost:3000/api/products \
 
 ---
 
-### 5. Update Product
+### 6. Update Product
 
 **What it does:** Updates an existing product (Admin only).
 
@@ -1292,7 +1469,7 @@ Content-Type: application/json
 
 ---
 
-### 6. Delete Product
+### 7. Delete Product
 
 **What it does:** Deletes a product (Admin only).
 
@@ -1327,8 +1504,9 @@ Authorization: Bearer <admin_jwt_token>
 ```
 
 ---
-
 ## 📁 Categories Endpoints
+
+> **📌 Important:** The system has 11 default categories (Travel Essentials, Dresses, Basics, Body Suits, Co-ords, Tops, Bottoms, Male, Female, Kids, Accessories). When a user clicks a category icon, the system automatically tracks their last selected category. For new users or when no category has been selected, the system defaults to the first category. Use the `/api/categories/active` endpoint to get the user's active category (last selected or first category).
 
 Base Path: `/api/categories`
 
@@ -1347,20 +1525,21 @@ Base Path: `/api/categories`
   "categories": [
     {
       "_id": "675a1b2c3d4e5f6g7h8i9j0l",
-      "name": "Electronics",
-      "image": "https://example.com/electronics.jpg",
+      "name": "Travel Essentials",
+      "image": "https://example.com/travel-essentials.jpg",
+      "icon": "https://example.com/travel-icon.png",
       "parentCategory": null,
+      "displayOrder": 1,
       "createdAt": "2024-01-15T10:00:00.000Z",
       "updatedAt": "2024-01-15T10:00:00.000Z"
     },
     {
       "_id": "675a1b2c3d4e5f6g7h8i9j0m",
-      "name": "Smartphones",
-      "image": "https://example.com/smartphones.jpg",
-      "parentCategory": {
-        "_id": "675a1b2c3d4e5f6g7h8i9j0l",
-        "name": "Electronics"
-      },
+      "name": "Dresses",
+      "image": "https://example.com/dresses.jpg",
+      "icon": "https://example.com/dresses-icon.png",
+      "parentCategory": null,
+      "displayOrder": 2,
       "createdAt": "2024-01-15T10:05:00.000Z",
       "updatedAt": "2024-01-15T10:05:00.000Z"
     }
@@ -1368,18 +1547,22 @@ Base Path: `/api/categories`
 }
 ```
 
+> **Note:** Categories are sorted by `displayOrder` (ascending) by default. The 11 default categories are pre-seeded with display orders 1-11.
+
 ---
 
-### 2. Get Category by ID
+### 2. Get Active Category (Last Selected or First Category)
 
-**What it does:** Retrieves detailed information about a specific category.
+**What it does:** Returns the user's last selected category (if authenticated) or the first category (for new/unauthenticated users). This is the recommended endpoint for displaying the default category when the app loads.
 
-**Endpoint:** `GET /api/categories/:id`
+**Endpoint:** `GET /api/categories/active`
 
-**Authentication:** Not required
+**Authentication:** Optional (if authenticated, returns last selected category; otherwise returns first category)
 
-**URL Parameters:**
-- `id` (required): Category ID
+**Request Headers (Optional):**
+```http
+Authorization: Bearer <jwt_token>
+```
 
 **Success Response (200):**
 ```json
@@ -1387,14 +1570,65 @@ Base Path: `/api/categories`
   "success": true,
   "category": {
     "_id": "675a1b2c3d4e5f6g7h8i9j0l",
-    "name": "Electronics",
-    "image": "https://example.com/electronics.jpg",
+    "name": "Travel Essentials",
+    "image": "https://example.com/travel-essentials.jpg",
+    "icon": "https://example.com/travel-icon.png",
     "parentCategory": null,
+    "displayOrder": 1,
     "createdAt": "2024-01-15T10:00:00.000Z",
     "updatedAt": "2024-01-15T10:00:00.000Z"
   }
 }
 ```
+
+**Note:** For authenticated users, accessing this endpoint also updates their `lastSelectedCategory` to the returned category.
+
+**Error Responses:**
+
+**404 - No Categories Available:**
+```json
+{
+  "success": false,
+  "message": "No categories available"
+}
+```
+
+---
+
+### 3. Get Category by ID
+
+**What it does:** Retrieves detailed information about a specific category. For authenticated users, this also updates their last selected category.
+
+**Endpoint:** `GET /api/categories/:id`
+
+**Authentication:** Not required (but if provided, tracks as last selected category)
+
+**URL Parameters:**
+- `id` (required): Category ID
+
+**Request Headers (Optional):**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "category": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+    "name": "Dresses",
+    "image": "https://example.com/dresses.jpg",
+    "icon": "https://example.com/dresses-icon.png",
+    "parentCategory": null,
+    "displayOrder": 2,
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**Note:** If the user is authenticated, accessing this endpoint automatically updates their `lastSelectedCategory` to this category.
 
 **Error Responses:**
 
@@ -1417,7 +1651,40 @@ Base Path: `/api/categories`
 
 ---
 
-### 3. Create Category
+### 4. Get Top-Level Categories Only
+
+**What it does:** Retrieves only top-level categories (categories without a parent). Useful for displaying the main category menu.
+
+**Endpoint:** `GET /api/categories/top-level`
+
+**Authentication:** Not required
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "categories": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+      "name": "Travel Essentials",
+      "image": "https://example.com/travel-essentials.jpg",
+      "icon": "https://example.com/travel-icon.png",
+      "displayOrder": 1
+    },
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0m",
+      "name": "Dresses",
+      "image": "https://example.com/dresses.jpg",
+      "icon": "https://example.com/dresses-icon.png",
+      "displayOrder": 2
+    }
+  ]
+}
+```
+
+---
+
+### 5. Create Category
 
 **What it does:** Creates a new category (Admin only).
 
@@ -1435,7 +1702,9 @@ Content-Type: application/json
 ```json
 {
   "name": "Electronics",
-  "image": "https://example.com/electronics.jpg"
+  "image": "https://example.com/electronics.jpg",
+  "icon": "https://example.com/electronics-icon.png",
+  "displayOrder": 12
 }
 ```
 
@@ -1444,14 +1713,18 @@ Content-Type: application/json
 {
   "name": "Smartphones",
   "image": "https://example.com/smartphones.jpg",
-  "parentCategory": "675a1b2c3d4e5f6g7h8i9j0l"
+  "icon": "https://example.com/smartphones-icon.png",
+  "parentCategory": "675a1b2c3d4e5f6g7h8i9j0l",
+  "displayOrder": 1
 }
 ```
 
 **Field Requirements:**
 - `name` (required): Category name (must be unique)
 - `image` (optional): Category image URL
-- `parentCategory` (optional): Parent category ID (for nested categories). Leave empty or null for top-level categories.
+- `icon` (optional): Icon URL for circular category icons (used in mobile UI)
+- `parentCategory` (optional): Parent category ID (for nested categories). Leave empty, null, or omit for top-level categories.
+- `displayOrder` (optional): Number for sorting categories (default: 0). Lower numbers appear first.
 
 **Success Response (201):**
 ```json
@@ -1528,6 +1801,150 @@ curl -X POST http://localhost:3000/api/categories \
 
 ---
 
+### 6. Update Category
+
+**What it does:** Updates an existing category (Admin only). Can update name, image, icon, parent category, and display order. Cannot set a category as its own parent.
+
+**Endpoint:** `PUT /api/categories/:id`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+Content-Type: application/json
+```
+
+**URL Parameters:**
+- `id` (required): Category ID to update
+
+**Request Body:**
+```json
+{
+  "name": "Updated Category Name",
+  "image": "https://example.com/updated-image.jpg",
+  "icon": "https://example.com/updated-icon.png",
+  "parentCategory": "675a1b2c3d4e5f6g7h8i9j0l",
+  "displayOrder": 5
+}
+```
+
+**Field Requirements:**
+- All fields are optional - only include fields you want to update
+- `name`: Must be unique if provided
+- `parentCategory`: Must be a valid category ID or null/empty string
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Category updated successfully",
+  "category": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+    "name": "Updated Category Name",
+    "image": "https://example.com/updated-image.jpg",
+    "icon": "https://example.com/updated-icon.png",
+    "parentCategory": {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0m",
+      "name": "Parent Category"
+    },
+    "displayOrder": 5,
+    "updatedAt": "2024-01-15T14:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+**404 - Category Not Found:**
+```json
+{
+  "success": false,
+  "message": "Category not found"
+}
+```
+
+**400 - Category Cannot Be Its Own Parent:**
+```json
+{
+  "success": false,
+  "message": "Category cannot be its own parent"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X PUT http://localhost:3000/api/categories/675a1b2c3d4e5f6g7h8i9j0l \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Category",
+    "displayOrder": 10
+  }'
+```
+
+---
+
+### 7. Delete Category
+
+**What it does:** Deletes a category (Admin only). Cannot delete categories that have products or subcategories.
+
+**Endpoint:** `DELETE /api/categories/:id`
+
+**Authentication:** Required (Admin only)
+
+**Request Headers:**
+```http
+Authorization: Bearer <admin_jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Category ID to delete
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Category deleted successfully"
+}
+```
+
+**Error Responses:**
+
+**404 - Category Not Found:**
+```json
+{
+  "success": false,
+  "message": "Category not found"
+}
+```
+
+**400 - Category Has Products:**
+```json
+{
+  "success": false,
+  "message": "Cannot delete category. It has 15 product(s) associated with it. Please remove or reassign products first."
+}
+```
+
+**400 - Category Has Subcategories:**
+```json
+{
+  "success": false,
+  "message": "Cannot delete category. It has 3 subcategory(ies). Please delete or reassign subcategories first."
+}
+```
+
+**Note:** When a category is deleted, all users who had it as their `lastSelectedCategory` will have that field cleared.
+
+**Example Request (cURL):**
+```bash
+curl -X DELETE http://localhost:3000/api/categories/675a1b2c3d4e5f6g7h8i9j0l \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+---
+
 ## 👤 User Management Endpoints
 
 Base Path: `/api/user`
@@ -1553,15 +1970,117 @@ Authorization: Bearer <jwt_token>
   "success": true,
   "user": {
     "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "title": "Mr",
     "firstname": "John",
     "lastname": "Doe",
     "email": "john@example.com",
     "phone": "+1234567890",
+    "gender": "Male",
     "role": "user",
     "avatar": "https://example.com/avatar.jpg",
     "isVerified": true,
+    "marketingPreferences": {
+      "email": true,
+      "sms": false,
+      "push": true
+    },
+    "defaultAddress": {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0a",
+      "title": "Home",
+      "fullName": "John Doe",
+      "address": "123 Main Street",
+      "city": "Lagos",
+      "state": "Lagos",
+      "country": "Nigeria",
+      "postalCode": "100001"
+    },
+    "lastSelectedCategory": {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+      "name": "Travel Essentials",
+      "image": "https://example.com/travel-essentials.jpg"
+    },
     "createdAt": "2024-01-15T10:00:00.000Z",
     "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+> **📝 Note:** The `lastSelectedCategory` field is automatically updated when the user accesses a category via `GET /api/categories/:id` or `GET /api/categories/active`. The `defaultAddress` field references the user's default shipping address (if set).
+
+**Error Responses:**
+
+**401 - Unauthorized:**
+```json
+{
+  "success": false,
+  "message": "Not authorized to access this route"
+}
+```
+
+---
+
+### 2. Update User Profile
+
+**What it does:** Updates the authenticated user's profile information. Only provided fields will be updated.
+
+**Endpoint:** `PUT /api/user/profile`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "title": "Mr",
+  "firstname": "John",
+  "lastname": "Doe",
+  "phone": "+1234567890",
+  "gender": "Male",
+  "avatar": "https://example.com/avatar.jpg",
+  "marketingPreferences": {
+    "email": true,
+    "sms": false,
+    "push": true
+  }
+}
+```
+
+**Field Requirements:**
+- All fields are optional - only include fields you want to update
+- `title`: Must be one of: "Mr", "Mrs", "Ms", "Miss", "Dr", "Prof", or "" (empty string)
+- `gender`: Must be one of: "Male", "Female", "Other", or "" (empty string)
+- `marketingPreferences`: Object with `email`, `sms`, and `push` boolean fields
+- `firstname`, `lastname`, `phone`: String values
+- `avatar`: URL string
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "user": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "title": "Mr",
+    "firstname": "John",
+    "lastname": "Doe",
+    "email": "john@example.com",
+    "phone": "+1234567890",
+    "gender": "Male",
+    "role": "user",
+    "avatar": "https://example.com/avatar.jpg",
+    "marketingPreferences": {
+      "email": true,
+      "sms": false,
+      "push": true
+    },
+    "isVerified": true,
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T14:00:00.000Z"
   }
 }
 ```
@@ -1576,9 +2095,35 @@ Authorization: Bearer <jwt_token>
 }
 ```
 
+**400 - Invalid Field Value:**
+```json
+{
+  "success": false,
+  "message": "Invalid gender value. Must be one of: Male, Female, Other"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X PUT http://localhost:3000/api/user/profile \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Mr",
+    "gender": "Male",
+    "marketingPreferences": {
+      "email": true,
+      "sms": false,
+      "push": true
+    }
+  }'
+```
+
+> **💡 Tip:** To set a default address, use the `PUT /api/addresses/:id/default` endpoint. The `defaultAddress` field in the user profile will be automatically updated.
+
 ---
 
-### 2. Get Search History
+### 3. Get Search History
 
 **What it does:** Retrieves the user's search history.
 
@@ -1593,26 +2138,32 @@ Authorization: Bearer <jwt_token>
 ```json
 {
   "success": true,
-  "searches": [
+  "history": [
     {
       "_id": "675a1b2c3d4e5f6g7h8i9j0n",
       "query": "summer dresses",
-      "createdAt": "2024-01-15T12:00:00.000Z"
+      "user": "675a1b2c3d4e5f6g7h8i9j0k",
+      "createdAt": "2024-01-15T12:00:00.000Z",
+      "updatedAt": "2024-01-15T12:00:00.000Z"
     },
     {
       "_id": "675a1b2c3d4e5f6g7h8i9j0o",
       "query": "formal suits",
-      "createdAt": "2024-01-15T11:30:00.000Z"
+      "user": "675a1b2c3d4e5f6g7h8i9j0k",
+      "createdAt": "2024-01-15T11:30:00.000Z",
+      "updatedAt": "2024-01-15T11:30:00.000Z"
     }
   ]
 }
 ```
 
+> **📝 Note:** Search history is automatically saved when authenticated users search using the `GET /api/products?search=<query>` endpoint. You can still manually save searches using `POST /api/user/search-history`, but it's not necessary for most use cases.
+
 ---
 
-### 3. Save Search History
+### 4. Save Search History (Manual)
 
-**What it does:** Saves a search query to the user's search history.
+**What it does:** Manually saves a search query to the user's search history. **Note:** This is optional as search history is automatically saved when using the search endpoint.
 
 **Endpoint:** `POST /api/user/search-history`
 
@@ -1629,19 +2180,15 @@ Authorization: Bearer <jwt_token>
 ```json
 {
   "success": true,
-  "message": "Search saved successfully",
-  "search": {
-    "_id": "675a1b2c3d4e5f6g7h8i9j0n",
-    "query": "summer dresses",
-    "user": "675a1b2c3d4e5f6g7h8i9j0k",
-    "createdAt": "2024-01-15T12:00:00.000Z"
-  }
+  "message": "Search history saved"
 }
 ```
 
+> **💡 Tip:** Search history is automatically saved when authenticated users search using `GET /api/products?search=<query>`. This manual endpoint is useful for saving searches from other sources or for custom search implementations.
+
 ---
 
-### 4. Clear Search History
+### 5. Clear Search History
 
 **What it does:** Deletes all search history for the authenticated user.
 
@@ -1659,7 +2206,7 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 5. Get Notifications
+### 6. Get Notifications
 
 **What it does:** Retrieves notifications for the authenticated user.
 
@@ -1694,7 +2241,7 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 6. Get Unread Notification Count
+### 7. Get Unread Notification Count
 
 **What it does:** Returns the count of unread notifications.
 
@@ -1712,7 +2259,7 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 7. Mark Notification as Read
+### 8. Mark Notification as Read
 
 **What it does:** Marks a specific notification as read.
 
@@ -1738,6 +2285,156 @@ Authorization: Bearer <jwt_token>
 
 ---
 
+### 9. Get Favorites (Favorite Stores)
+
+**What it does:** Retrieves all products in the user's favorites list (favorite stores).
+
+**Endpoint:** `GET /api/user/favorites`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "favorites": [
+    {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+      "title": "Elegant Evening Gown",
+      "description": "Stunning floor-length gown...",
+      "price": 45000,
+      "currency": "NGN",
+      "images": ["https://example.com/gown.jpg"],
+      "category": {
+        "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+        "name": "Dresses"
+      }
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+**401 - Unauthorized:**
+```json
+{
+  "success": false,
+  "message": "Not authorized to access this route"
+}
+```
+
+---
+
+### 10. Add to Favorites
+
+**What it does:** Adds a product to the user's favorites list.
+
+**Endpoint:** `POST /api/user/favorites`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "productId": "675a1b2c3d4e5f6g7h8i9j0k"
+}
+```
+
+**Field Requirements:**
+- `productId` (required): Valid product ID (MongoDB ObjectId)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Product added to favorites"
+}
+```
+
+**Error Responses:**
+
+**400 - Product Already in Favorites:**
+```json
+{
+  "success": false,
+  "message": "Product already in favorites"
+}
+```
+
+**404 - Product Not Found:**
+```json
+{
+  "success": false,
+  "message": "Product not found"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/user/favorites \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": "675a1b2c3d4e5f6g7h8i9j0k"
+  }'
+```
+
+---
+
+### 11. Remove from Favorites
+
+**What it does:** Removes a product from the user's favorites list.
+
+**Endpoint:** `DELETE /api/user/favorites/:id`
+
+**Authentication:** Required
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**URL Parameters:**
+- `id` (required): Product ID to remove from favorites
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Product removed from favorites"
+}
+```
+
+**Error Responses:**
+
+**404 - Product Not in Favorites:**
+```json
+{
+  "success": false,
+  "message": "Product not found in favorites"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl -X DELETE http://localhost:3000/api/user/favorites/675a1b2c3d4e5f6g7h8i9j0k \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
 ## 🗄️ Data Models
 
 ### User Model
@@ -1745,11 +2442,13 @@ Authorization: Bearer <jwt_token>
 ```javascript
 {
   _id: ObjectId,                    // Unique user ID
+  title: String,                    // Optional: "Mr", "Mrs", "Ms", "Miss", "Dr", "Prof", or ""
   firstname: String,                // Required
   lastname: String,                 // Required
   email: String,                    // Required, Unique
   phone: String,                    // Optional, Unique
   password: String,                 // Hashed password (for email/password users)
+  gender: String,                   // Optional: "Male", "Female", "Other", or ""
   role: String,                     // "user" | "admin" (default: "user")
   avatar: String,                   // Profile picture URL
   googleId: String,                 // Google OAuth ID (optional)
@@ -1759,6 +2458,13 @@ Authorization: Bearer <jwt_token>
   verificationCodeExpiry: Date,     // Code expiry time
   resetCode: String,                // 4-digit code for password reset
   resetCodeExpiry: Date,            // Reset code expiry time
+  lastSelectedCategory: ObjectId,   // Last category user viewed (reference to Category). Updated automatically when user accesses a category.
+  marketingPreferences: {          // Marketing communication preferences
+    email: Boolean,                 // Email marketing (default: false)
+    sms: Boolean,                   // SMS marketing (default: false)
+    push: Boolean                   // Push notifications (default: false)
+  },
+  defaultAddress: ObjectId,         // Reference to default shipping Address (optional)
   createdAt: Date,                  // Account creation date
   updatedAt: Date                   // Last update date
 }
@@ -1771,19 +2477,40 @@ Authorization: Bearer <jwt_token>
   _id: ObjectId,                    // Unique product ID
   title: String,                    // Required
   description: String,              // Required
-  price: Number,                    // Required
-  currency: String,                 // Default: "NGN"
+  price: Number,                    // Required (base price in currency)
+  currency: String,                 // Default: "NGN" (base currency)
+  displayCurrency: String,          // Default: "USD" (display currency, e.g., "$56.99")
+  displayPrice: Number,             // Display price in displayCurrency (optional)
   discountPercentage: Number,      // Default: 0
   category: ObjectId,               // Required, Reference to Category
+  brand: String,                    // Brand name (e.g., "Gagnon")
+  releaseDate: Date,                // Product release date
   images: [String],                 // Array of image URLs
   tags: [String],                   // Array of tags
   rating: Number,                   // Default: 0, Range: 0-5
-  stock: Number,                    // Default: 0
+  stock: Number,                    // Default: 0 (total stock, sum of all variants if hasVariants is true)
+  salesCount: Number,               // Default: 0 (number of units sold)
+  hasVariants: Boolean,             // Default: false (whether product has size/color variants)
   createdBy: ObjectId,              // Reference to User (admin)
+  // Featured product fields
+  isFeatured: Boolean,             // Default: false
+  featuredAt: Date,                // When product was featured
+  featuredUntil: Date,              // Optional expiry date for feature
+  // Product badges
+  badges: [String],                // Manual badges: ["HOT", "NEW", "SALE", "BESTSELLER", "LIMITED"]
+  // Computed fields (not stored in DB, returned in API)
+  calculatedBadges: [String],      // Auto-calculated based on product properties (HOT, NEW, SALE, LIMITED)
+  isInFavorites: Boolean,          // Whether product is in user's favorites (if authenticated)
+  variants: [ProductVariant],      // Array of variants (if hasVariants is true, populated from ProductVariant model)
   createdAt: Date,
   updatedAt: Date
 }
 ```
+
+> **📝 Note:** 
+> - If `hasVariants` is `true`, the product will have variants stored in the `ProductVariant` model. The `stock` field represents the total stock across all variants.
+> - `calculatedBadges` are automatically computed based on product properties (e.g., discount percentage, release date, sales count).
+> - `isInFavorites` is only included in responses for authenticated users.
 
 ### Category Model
 
@@ -1792,9 +2519,23 @@ Authorization: Bearer <jwt_token>
   _id: ObjectId,                    // Unique category ID
   name: String,                     // Required, Unique
   image: String,                    // Category image URL
+  icon: String,                     // Icon URL for circular category icons (used in mobile UI)
   parentCategory: ObjectId,         // Optional, Reference to Category (for nested categories)
+  displayOrder: Number,             // For sorting categories (default: 0). Lower numbers appear first.
   createdAt: Date,
   updatedAt: Date
+}
+```
+
+### Favorites Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique favorite entry ID
+  user: ObjectId,                   // Required, Reference to User
+  product: ObjectId,                // Required, Reference to Product
+  createdAt: Date,                  // When added to favorites
+  updatedAt: Date                   // Last update date
 }
 ```
 
@@ -1984,10 +2725,12 @@ All error responses follow this format:
    - Don't request more than 100 items per page
    - Use page and limit parameters
 
-3. **Filtering**
+3. **Filtering & Search**
    - Use query parameters for filtering
    - Combine multiple filters when needed
-   - Use search parameter for text search
+   - Use `search` parameter for text search (searches title, description, and tags)
+   - Search automatically saves to history for authenticated users
+   - Search is case-insensitive and supports partial matches
 
 4. **Error Handling**
    - Always check response status codes
@@ -2050,7 +2793,7 @@ node backend/test-2fa.js
 ### Admin Account
 
 - **Email:** `gianosamsung@gmail.com`
-- **Password:** `Admin@McGeorge2024`
+- **Password:** `Admin@LX2024`
 - Only this email has admin privileges
 - Admin users bypass some restrictions
 
@@ -2073,6 +2816,13 @@ node backend/test-2fa.js
 - Category IDs are validated before product creation
 - Parent category IDs are validated before subcategory creation
 - Email and phone must be unique
+
+### Search Functionality
+
+- **Automatic History Saving:** When authenticated users search using `GET /api/products?search=<query>`, the search is automatically saved to their search history
+- **Duplicate Prevention:** Duplicate searches within 1 hour are not saved to prevent spam
+- **Search Scope:** Searches across product title, description, and tags (case-insensitive)
+- **No Authentication Required:** Search works for all users, but history is only saved for authenticated users
 
 ---
 
@@ -2101,6 +2851,21 @@ This API is proprietary software. All rights reserved.
 
 ---
 
-**Last Updated:** 2024  
+**Last Updated:** January 2025  
 **API Version:** 1.0.0  
-**Documentation Version:** 1.0.0
+**Documentation Version:** 1.1.0
+
+---
+
+## 📝 Changelog
+
+### Version 1.1.0 (January 2025)
+- ✅ Added automatic search history saving for authenticated users
+- ✅ Enhanced search functionality with case-insensitive regex matching
+- ✅ Added Featured Products endpoint
+- ✅ Added Active Category endpoint
+- ✅ Added Update and Delete Category endpoints
+- ✅ Updated Product model documentation with badges and featured fields
+- ✅ Updated Category model with icon and displayOrder fields
+- ✅ Improved search history response format documentation
+- ✅ Added seed scripts documentation for categories and products

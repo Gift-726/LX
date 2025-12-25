@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const User = require('./models/User');
 
 const ADMIN_EMAIL = 'gianosamsung@gmail.com';
-const ADMIN_PASSWORD = 'Admin@McGeorge2024';
+const ADMIN_PASSWORD = 'Admin@LX2024';
 
 const getAdminToken = async () => {
     try {
@@ -23,7 +23,7 @@ const getAdminToken = async () => {
 
             admin = await User.create({
                 firstname: 'Admin',
-                lastname: 'McGeorge',
+                lastname: 'Admin',
                 email: ADMIN_EMAIL,
                 phone: '1234567890',
                 password: hashedPassword,

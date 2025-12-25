@@ -1,6 +1,6 @@
 // backend/login-admin.js - Login and get admin token
 const ADMIN_EMAIL = 'gianosamsung@gmail.com';
-const ADMIN_PASSWORD = 'Admin@McGeorge2024';
+const ADMIN_PASSWORD = 'Admin@LX2024';
 const BASE_URL = 'http://localhost:3000/api';
 
 console.log('🔐 Logging in as admin...\n');

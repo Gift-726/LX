@@ -5,6 +5,7 @@
 
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
+const User = require("../models/User");
 
 /* ============================================================
    GET ALL CATEGORIES
@@ -148,7 +149,7 @@ const createCategory = async (req, res) => {
 };
 
 /* ============================================================
-   GET CATEGORY BY ID
+   GET CATEGORY BY ID (Tracks last selected category for authenticated users)
 ============================================================ */
 const getCategoryById = async (req, res) => {
     try {
@@ -160,6 +161,13 @@ const getCategoryById = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Category not found"
+            });
+        }
+
+        // Track last selected category for authenticated users
+        if (req.user && req.user._id) {
+            await User.findByIdAndUpdate(req.user._id, {
+                lastSelectedCategory: id
             });
         }
 
@@ -188,9 +196,239 @@ const getCategoryById = async (req, res) => {
     }
 };
 
+/* ============================================================
+   GET USER'S ACTIVE CATEGORY (Returns last selected or first category)
+============================================================ */
+const getActiveCategory = async (req, res) => {
+    try {
+        let category = null;
+
+        // For authenticated users, get their last selected category
+        if (req.user && req.user._id) {
+            const user = await User.findById(req.user._id).populate("lastSelectedCategory");
+            
+            if (user && user.lastSelectedCategory) {
+                // Verify category still exists
+                category = await Category.findById(user.lastSelectedCategory._id);
+                if (category) {
+                    return res.json({
+                        success: true,
+                        category: await Category.findById(category._id).populate("parentCategory", "name")
+                    });
+                }
+            }
+        }
+
+        // If no last selected category (or user not authenticated), get first category
+        category = await Category.findOne({ parentCategory: null })
+            .sort({ displayOrder: 1, name: 1 });
+
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "No categories available"
+            });
+        }
+
+        const populatedCategory = await Category.findById(category._id).populate("parentCategory", "name");
+
+        // Track this as last selected for authenticated users
+        if (req.user && req.user._id) {
+            await User.findByIdAndUpdate(req.user._id, {
+                lastSelectedCategory: category._id
+            });
+        }
+
+        res.json({
+            success: true,
+            category: populatedCategory
+        });
+
+    } catch (error) {
+        console.error("Get active category error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   UPDATE CATEGORY (Admin Only)
+============================================================ */
+const updateCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, image, icon, parentCategory, displayOrder } = req.body;
+
+        const category = await Category.findById(id);
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        // If name is being updated, check for duplicates
+        if (name && name !== category.name) {
+            const existingCategory = await Category.findOne({ name });
+            if (existingCategory) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Category name already exists"
+                });
+            }
+        }
+
+        // Handle parentCategory validation
+        let validParentCategory = category.parentCategory;
+        if (parentCategory !== undefined) {
+            if (parentCategory === null || parentCategory === '') {
+                validParentCategory = null;
+            } else if (!mongoose.Types.ObjectId.isValid(parentCategory)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid parent category ID format"
+                });
+            } else {
+                // Prevent setting itself as parent
+                if (parentCategory === id) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Category cannot be its own parent"
+                    });
+                }
+                const parentExists = await Category.findById(parentCategory);
+                if (!parentExists) {
+                    return res.status(404).json({
+                        success: false,
+                        message: "Parent category not found"
+                    });
+                }
+                validParentCategory = parentCategory;
+            }
+        }
+
+        // Update category
+        const updateData = {};
+        if (name !== undefined) updateData.name = name;
+        if (image !== undefined) updateData.image = image;
+        if (icon !== undefined) updateData.icon = icon;
+        if (parentCategory !== undefined) updateData.parentCategory = validParentCategory;
+        if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
+
+        const updatedCategory = await Category.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        ).populate("parentCategory", "name");
+
+        res.json({
+            success: true,
+            message: "Category updated successfully",
+            category: updatedCategory
+        });
+
+    } catch (error) {
+        console.error("Update category error:", error);
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid ID format",
+                error: error.message
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: "Validation error",
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   DELETE CATEGORY (Admin Only)
+============================================================ */
+const deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const category = await Category.findById(id);
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found"
+            });
+        }
+
+        // Check if category has products
+        const Product = require("../models/Product");
+        const productCount = await Product.countDocuments({ category: id });
+        if (productCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete category. It has ${productCount} product(s) associated with it. Please remove or reassign products first.`
+            });
+        }
+
+        // Check if category has subcategories
+        const subcategoryCount = await Category.countDocuments({ parentCategory: id });
+        if (subcategoryCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete category. It has ${subcategoryCount} subcategory(ies). Please delete or reassign subcategories first.`
+            });
+        }
+
+        // Remove from users' lastSelectedCategory if set
+        await User.updateMany(
+            { lastSelectedCategory: id },
+            { $unset: { lastSelectedCategory: 1 } }
+        );
+
+        await Category.findByIdAndDelete(id);
+
+        res.json({
+            success: true,
+            message: "Category deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("Delete category error:", error);
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid ID format",
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getAllCategories,
     getTopLevelCategories,
     createCategory,
-    getCategoryById
+    getCategoryById,
+    getActiveCategory,
+    updateCategory,
+    deleteCategory
 };

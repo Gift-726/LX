@@ -204,19 +204,19 @@ ensureTransporterReady().catch((error) => {
 const getEmailTemplate = (code, type = "password-reset") => {
   const templates = {
     "registration": {
-      subject: "Verify Your Account - McGeorge LX",
-      title: "Welcome to McGeorge LX!",
+      subject: "Verify Your Account - LX",
+      title: "Welcome to LX!",
       message: "Thank you for registering. Please verify your email address using the code below:",
       action: "Complete Registration"
     },
     "login": {
-      subject: "Login Verification Code - McGeorge LX",
+      subject: "Login Verification Code - LX",
       title: "Login Verification",
       message: "You're logging into your account. Please enter the verification code below:",
       action: "Complete Login"
     },
     "password-reset": {
-      subject: "Password Reset Verification Code - McGeorge LX",
+      subject: "Password Reset Verification Code - LX",
       title: "Password Reset Request",
       message: "You requested to reset your password. Use the code below to proceed:",
       action: "Reset Password"
@@ -297,7 +297,7 @@ const getEmailTemplate = (code, type = "password-reset") => {
           </p>
           
           <div class="footer">
-            <p>© ${new Date().getFullYear()} McGeorge LX. All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} LX. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -349,8 +349,8 @@ const sendVerificationCode = async (email, code, type = "password-reset") => {
     const emailTemplate = getEmailTemplate(code, type);
     const cleanUserEmail = process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : '';
     const fromEmail = isGmail && cleanUserEmail
-      ? `"McGeorge LX" <${cleanUserEmail}>`
-      : '"McGeorge LX" <noreply@mcgeorgelx.com>';
+      ? `"LX" <${cleanUserEmail}>`
+      : '"LX" <noreply@lx.com>';
 
     // Create plain text version for better deliverability
     const plainText = `
@@ -364,7 +364,7 @@ This code will expire in 10 minutes.
 
 If you didn't request this, please ignore this email.
 
-© ${new Date().getFullYear()} McGeorge LX. All rights reserved.
+© ${new Date().getFullYear()} LX. All rights reserved.
     `.trim();
 
     const mailOptions = {
@@ -380,7 +380,7 @@ If you didn't request this, please ignore this email.
         'X-Priority': '1', // 1 = High priority
         'X-MSMail-Priority': 'High',
         'Importance': 'high',
-        'X-Mailer': 'McGeorge LX Authentication System',
+        'X-Mailer': 'LX Authentication System',
         'X-Auto-Response-Suppress': 'All', // Suppress auto-replies
         'Auto-Submitted': 'auto-generated', // Mark as system-generated
       },

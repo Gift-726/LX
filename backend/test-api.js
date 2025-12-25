@@ -5,14 +5,14 @@ const BASE_URL = 'http://localhost:3000/api';
 
 // Test credentials
 const ADMIN_EMAIL = 'gianosamsung@gmail.com';
-const ADMIN_PASSWORD = 'Admin@McGeorge2024';
+const ADMIN_PASSWORD = 'Admin@LX2024';
 
 let adminToken = '';
 let userToken = '';
 let categoryId = '';
 let productId = '';
 
-console.log('🧪 Testing McGeorge LX API...\n');
+console.log('Testing LX API...\n');
 
 // Helper function to make requests
 const request = async (method, endpoint, data = null, token = null) => {

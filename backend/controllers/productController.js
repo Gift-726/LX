@@ -5,7 +5,9 @@
 
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
+const ProductVariant = require("../models/ProductVariant");
 const Category = require("../models/Category");
+const SearchHistory = require("../models/SearchHistory");
 
 /* ============================================================
    CREATE PRODUCT (Admin Only)
@@ -102,9 +104,41 @@ const getProducts = async (req, res) => {
             query.category = category;
         }
 
-        // Search by text
-        if (search) {
-            query.$text = { $search: search };
+        // Search by text - use regex for flexible matching across title, description, and tags
+        if (search && search.trim().length > 0) {
+            const searchTerm = search.trim();
+            const searchRegex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i"); // Escape special chars, case-insensitive
+            
+            // Search in title, description, and tags
+            query.$or = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { tags: { $in: [new RegExp(searchTerm, "i")] } }
+            ];
+            
+            // Save search history for authenticated users (asynchronously, don't block response)
+            if (req.user && req.user._id) {
+                setImmediate(async () => {
+                    try {
+                        // Check if this exact query already exists recently (within last hour)
+                        const existingSearch = await SearchHistory.findOne({
+                            user: req.user._id,
+                            query: searchTerm,
+                            createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) }
+                        });
+
+                        if (!existingSearch) {
+                            await SearchHistory.create({
+                                user: req.user._id,
+                                query: searchTerm
+                            });
+                        }
+                    } catch (err) {
+                        console.error("Error saving search history:", err);
+                        // Don't throw - search history saving shouldn't break the search
+                    }
+                });
+            }
         }
 
         // Filter by price range
@@ -126,20 +160,20 @@ const getProducts = async (req, res) => {
             .skip((page - 1) * limit)
             .sort({ createdAt: -1 });
 
-        // Get user's wishlist if authenticated
-        let userWishlist = [];
+        // Get user's favorites if authenticated
+        let userFavorites = [];
         if (req.user && req.user._id) {
-            const Wishlist = require("../models/Wishlist");
-            const wishlistItems = await Wishlist.find({ user: req.user._id }).select("product");
-            userWishlist = wishlistItems.map(item => item.product.toString());
+            const Favorites = require("../models/Favorites");
+            const favoriteItems = await Favorites.find({ user: req.user._id }).select("product");
+            userFavorites = favoriteItems.map(item => item.product.toString());
         }
 
-        // Add calculated badges and wishlist status to products
+        // Add calculated badges and favorites status to products
         products = products.map(product => {
             const productObj = product.toObject();
             productObj.calculatedBadges = calculateProductBadges(product);
-            productObj.isInWishlist = req.user && req.user._id 
-                ? userWishlist.includes(productObj._id.toString())
+            productObj.isInFavorites = req.user && req.user._id 
+                ? userFavorites.includes(productObj._id.toString())
                 : false;
             return productObj;
         });
@@ -218,20 +252,20 @@ const getFeaturedProducts = async (req, res) => {
             .sort({ featuredAt: -1, createdAt: -1 })
             .limit(Number(limit));
 
-        // Get user's wishlist if authenticated
-        let userWishlist = [];
+        // Get user's favorites if authenticated
+        let userFavorites = [];
         if (req.user && req.user._id) {
-            const Wishlist = require("../models/Wishlist");
-            const wishlistItems = await Wishlist.find({ user: req.user._id }).select("product");
-            userWishlist = wishlistItems.map(item => item.product.toString());
+            const Favorites = require("../models/Favorites");
+            const favoriteItems = await Favorites.find({ user: req.user._id }).select("product");
+            userFavorites = favoriteItems.map(item => item.product.toString());
         }
 
-        // Add calculated badges and wishlist status
+        // Add calculated badges and favorites status
         const productsWithBadges = products.map(product => {
             const productObj = product.toObject();
             productObj.calculatedBadges = calculateProductBadges(product);
-            productObj.isInWishlist = req.user && req.user._id 
-                ? userWishlist.includes(productObj._id.toString())
+            productObj.isInFavorites = req.user && req.user._id 
+                ? userFavorites.includes(productObj._id.toString())
                 : false;
             return productObj;
         });
@@ -299,16 +333,25 @@ const getProductById = async (req, res) => {
             const productObj = product.toObject();
             productObj.calculatedBadges = calculateProductBadges(product);
             
-            // Check if in wishlist (if user is authenticated)
+            // Get product variants if they exist
+            if (product.hasVariants) {
+                const variants = await ProductVariant.find({ product: product._id })
+                    .sort({ size: 1, color: 1 });
+                productObj.variants = variants;
+            } else {
+                productObj.variants = [];
+            }
+            
+            // Check if in favorites (if user is authenticated)
             if (req.user && req.user._id) {
-                const Wishlist = require("../models/Wishlist");
-                const wishlistItem = await Wishlist.findOne({
+                const Favorites = require("../models/Favorites");
+                const favoriteItem = await Favorites.findOne({
                     user: req.user._id,
                     product: productObj._id
                 });
-                productObj.isInWishlist = !!wishlistItem;
+                productObj.isInFavorites = !!favoriteItem;
             } else {
-                productObj.isInWishlist = false;
+                productObj.isInFavorites = false;
             }
             
             product = productObj;

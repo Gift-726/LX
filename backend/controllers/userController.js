@@ -6,14 +6,17 @@
 const User = require("../models/User");
 const SearchHistory = require("../models/SearchHistory");
 const Notification = require("../models/Notification");
-const Wishlist = require("../models/Wishlist");
+const Favorites = require("../models/Favorites");
 
 /* ============================================================
    GET USER PROFILE
 ============================================================ */
 const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select("-password -resetCode -resetCodeExpiry");
+        const user = await User.findById(req.user._id)
+            .select("-password -resetCode -resetCodeExpiry")
+            .populate("defaultAddress")
+            .populate("lastSelectedCategory", "name image");
 
         if (!user) {
             return res.status(404).json({
@@ -29,6 +32,53 @@ const getProfile = async (req, res) => {
 
     } catch (error) {
         console.error("Get profile error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+/* ============================================================
+   UPDATE USER PROFILE
+============================================================ */
+const updateProfile = async (req, res) => {
+    try {
+        const { title, firstname, lastname, phone, gender, avatar, marketingPreferences } = req.body;
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Update allowed fields
+        if (title !== undefined) user.title = title;
+        if (firstname !== undefined) user.firstname = firstname;
+        if (lastname !== undefined) user.lastname = lastname;
+        if (phone !== undefined) user.phone = phone;
+        if (gender !== undefined) user.gender = gender;
+        if (avatar !== undefined) user.avatar = avatar;
+        if (marketingPreferences !== undefined) {
+            user.marketingPreferences = {
+                ...user.marketingPreferences,
+                ...marketingPreferences
+            };
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "Profile updated successfully",
+            user
+        });
+
+    } catch (error) {
+        console.error("Update profile error:", error);
         res.status(500).json({
             success: false,
             message: "Server error",
@@ -222,21 +272,21 @@ const markAsRead = async (req, res) => {
 };
 
 /* ============================================================
-   GET WISHLIST
+   GET FAVORITES
 ============================================================ */
-const getWishlist = async (req, res) => {
+const getFavorites = async (req, res) => {
     try {
-        const wishlist = await Wishlist.find({ user: req.user._id })
+        const favorites = await Favorites.find({ user: req.user._id })
             .populate("product")
             .sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            wishlist: wishlist.map(item => item.product)
+            favorites: favorites.map(item => item.product)
         });
 
     } catch (error) {
-        console.error("Get wishlist error:", error);
+        console.error("Get favorites error:", error);
         res.status(500).json({
             success: false,
             message: "Server error",
@@ -246,9 +296,9 @@ const getWishlist = async (req, res) => {
 };
 
 /* ============================================================
-   ADD TO WISHLIST
+   ADD TO FAVORITES
 ============================================================ */
-const addToWishlist = async (req, res) => {
+const addToFavorites = async (req, res) => {
     try {
         const { productId } = req.body;
 
@@ -278,8 +328,8 @@ const addToWishlist = async (req, res) => {
             });
         }
 
-        // Check if already in wishlist
-        const existing = await Wishlist.findOne({
+        // Check if already in favorites
+        const existing = await Favorites.findOne({
             user: req.user._id,
             product: productId
         });
@@ -287,28 +337,28 @@ const addToWishlist = async (req, res) => {
         if (existing) {
             return res.status(400).json({
                 success: false,
-                message: "Product already in wishlist"
+                message: "Product already in favorites"
             });
         }
 
-        await Wishlist.create({
+        await Favorites.create({
             user: req.user._id,
             product: productId
         });
 
         res.json({
             success: true,
-            message: "Product added to wishlist"
+            message: "Product added to favorites"
         });
 
     } catch (error) {
-        console.error("Add to wishlist error:", error);
+        console.error("Add to favorites error:", error);
         
         // Handle duplicate key error
         if (error.code === 11000) {
             return res.status(400).json({
                 success: false,
-                message: "Product already in wishlist"
+                message: "Product already in favorites"
             });
         }
 
@@ -321,31 +371,31 @@ const addToWishlist = async (req, res) => {
 };
 
 /* ============================================================
-   REMOVE FROM WISHLIST
+   REMOVE FROM FAVORITES
 ============================================================ */
-const removeFromWishlist = async (req, res) => {
+const removeFromFavorites = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const wishlistItem = await Wishlist.findOneAndDelete({
+        const favoriteItem = await Favorites.findOneAndDelete({
             user: req.user._id,
             product: id
         });
 
-        if (!wishlistItem) {
+        if (!favoriteItem) {
             return res.status(404).json({
                 success: false,
-                message: "Product not found in wishlist"
+                message: "Product not found in favorites"
             });
         }
 
         res.json({
             success: true,
-            message: "Product removed from wishlist"
+            message: "Product removed from favorites"
         });
 
     } catch (error) {
-        console.error("Remove from wishlist error:", error);
+        console.error("Remove from favorites error:", error);
         res.status(500).json({
             success: false,
             message: "Server error",
@@ -356,13 +406,14 @@ const removeFromWishlist = async (req, res) => {
 
 module.exports = {
     getProfile,
+    updateProfile,
     getSearchHistory,
     saveSearchHistory,
     clearSearchHistory,
     getNotifications,
     getUnreadCount,
     markAsRead,
-    getWishlist,
-    addToWishlist,
-    removeFromWishlist
+    getFavorites,
+    addToFavorites,
+    removeFromFavorites
 };

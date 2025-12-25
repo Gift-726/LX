@@ -3,19 +3,21 @@ const router = express.Router();
 const { protect } = require("../middleware/auth");
 const {
     getProfile,
+    updateProfile,
     getSearchHistory,
     saveSearchHistory,
     clearSearchHistory,
     getNotifications,
     getUnreadCount,
     markAsRead,
-    getWishlist,
-    addToWishlist,
-    removeFromWishlist
+    getFavorites,
+    addToFavorites,
+    removeFromFavorites
 } = require("../controllers/userController");
 
 // All routes require authentication
 router.get("/profile", protect, getProfile);
+router.put("/profile", protect, updateProfile);
 
 // Search history routes
 router.get("/search-history", protect, getSearchHistory);
@@ -27,9 +29,9 @@ router.get("/notifications", protect, getNotifications);
 router.get("/notifications/unread-count", protect, getUnreadCount);
 router.put("/notifications/:id/read", protect, markAsRead);
 
-// Wishlist routes
-router.get("/wishlist", protect, getWishlist);
-router.post("/wishlist", protect, addToWishlist);
-router.delete("/wishlist/:id", protect, removeFromWishlist);
+// Favorites routes
+router.get("/favorites", protect, getFavorites);
+router.post("/favorites", protect, addToFavorites);
+router.delete("/favorites/:id", protect, removeFromFavorites);
 
 module.exports = router;

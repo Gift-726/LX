@@ -7,27 +7,27 @@ const Category = require('./models/Category');
 const Product = require('./models/Product');
 
 const ADMIN_EMAIL = 'gianosamsung@gmail.com';
-const ADMIN_PASSWORD = 'Admin@McGeorge2024';
+const ADMIN_PASSWORD = 'Admin@LX2024';
 
 const seedDatabase = async () => {
     try {
         // Connect to MongoDB
         await mongoose.connect(process.env.MONGO_URI);
-        console.log('✅ Connected to MongoDB');
+        console.log('Connected to MongoDB');
 
         // 1. Create Admin Account
-        console.log('\n📝 Creating admin account...');
+        console.log('\nCreating admin account...');
 
         const existingAdmin = await User.findOne({ email: ADMIN_EMAIL });
 
         if (existingAdmin) {
-            console.log('⚠️  Admin account already exists');
+            console.log('Admin account already exists');
         } else {
             const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
 
             await User.create({
                 firstname: 'Admin',
-                lastname: 'McGeorge',
+                lastname: 'Admin',
                 email: ADMIN_EMAIL,
                 phone: '1234567890',
                 password: hashedPassword,
@@ -35,13 +35,13 @@ const seedDatabase = async () => {
                 isVerified: true  // Admin is pre-verified
             });
 
-            console.log('✅ Admin account created');
+            console.log('Admin account created');
             console.log('   Email:', ADMIN_EMAIL);
             console.log('   Password:', ADMIN_PASSWORD);
         }
 
         // 2. Create Sample Categories
-        console.log('\n📦 Creating sample categories...');
+        console.log('\nCreating sample categories...');
 
         const categoryData = [
             { name: 'Men', image: 'https://via.placeholder.com/150' },
@@ -55,12 +55,12 @@ const seedDatabase = async () => {
             const existing = await Category.findOne({ name: cat.name });
             if (!existing) {
                 await Category.create(cat);
-                console.log(`   ✅ Created category: ${cat.name}`);
+                console.log(`   Created category: ${cat.name}`);
             }
         }
 
         // 3. Create Sample Products
-        console.log('\n🛍️  Creating sample products...');
+        console.log('\nCreating sample products...');
 
         const menCategory = await Category.findOne({ name: 'Men' });
         const womenCategory = await Category.findOne({ name: 'Women' });
@@ -125,12 +125,12 @@ const seedDatabase = async () => {
             const existing = await Product.findOne({ title: prod.title });
             if (!existing) {
                 await Product.create(prod);
-                console.log(`   ✅ Created product: ${prod.title}`);
+                console.log(`   Created product: ${prod.title}`);
             }
         }
 
-        console.log('\n✅ Database seeded successfully!');
-        console.log('\n📋 Summary:');
+        console.log('\nDatabase seeded successfully!');
+        console.log('\nSummary:');
         console.log('   Admin Email:', ADMIN_EMAIL);
         console.log('   Admin Password:', ADMIN_PASSWORD);
         console.log('   Categories:', await Category.countDocuments());
@@ -139,7 +139,7 @@ const seedDatabase = async () => {
         process.exit(0);
 
     } catch (error) {
-        console.error('❌ Seeding error:', error);
+        console.error('Seeding error:', error);
         process.exit(1);
     }
 };
