@@ -12,7 +12,21 @@ const User = require("../models/User");
 ============================================================ */
 const getAllCategories = async (req, res) => {
     try {
-        const categories = await Category.find()
+        const { search } = req.query;
+
+        let query = {};
+
+        // Search by name or description
+        if (search && search.trim().length > 0) {
+            const searchTerm = search.trim();
+            const searchRegex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i");
+            query.$or = [
+                { name: searchRegex },
+                { description: searchRegex }
+            ];
+        }
+
+        const categories = await Category.find(query)
             .populate("parentCategory", "name")
             .sort({ displayOrder: 1, name: 1 });
 
@@ -61,7 +75,7 @@ const getTopLevelCategories = async (req, res) => {
 ============================================================ */
 const createCategory = async (req, res) => {
     try {
-        const { name, image, parentCategory } = req.body;
+        const { name, description, image, parentCategory } = req.body;
 
         if (!name) {
             return res.status(400).json({
@@ -109,6 +123,7 @@ const createCategory = async (req, res) => {
 
         const category = await Category.create({
             name,
+            description: description || undefined,
             image: image || undefined,
             parentCategory: validParentCategory
         });
@@ -260,7 +275,7 @@ const getActiveCategory = async (req, res) => {
 const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, image, icon, parentCategory, displayOrder } = req.body;
+        const { name, description, image, icon, parentCategory, displayOrder } = req.body;
 
         const category = await Category.findById(id);
         if (!category) {
@@ -313,6 +328,7 @@ const updateCategory = async (req, res) => {
         // Update category
         const updateData = {};
         if (name !== undefined) updateData.name = name;
+        if (description !== undefined) updateData.description = description;
         if (image !== undefined) updateData.image = image;
         if (icon !== undefined) updateData.icon = icon;
         if (parentCategory !== undefined) updateData.parentCategory = validParentCategory;

@@ -28,7 +28,9 @@ const productSchema = new mongoose.Schema(
             enum: ["HOT", "NEW", "SALE", "BESTSELLER", "LIMITED"] 
         }],
         // Variant support
-        hasVariants: { type: Boolean, default: false } // Whether product has size/color variants
+        hasVariants: { type: Boolean, default: false }, // Whether product has size/color variants
+        // Product availability
+        isAvailable: { type: Boolean, default: true } // Whether product is available for purchase
     },
     { timestamps: true }
 );

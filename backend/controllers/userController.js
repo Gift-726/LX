@@ -272,17 +272,70 @@ const markAsRead = async (req, res) => {
 };
 
 /* ============================================================
-   GET FAVORITES
+   GET FAVORITES (Favorite Stores)
 ============================================================ */
 const getFavorites = async (req, res) => {
     try {
+        const { page = 1, limit = 20 } = req.query;
+
         const favorites = await Favorites.find({ user: req.user._id })
-            .populate("product")
-            .sort({ createdAt: -1 });
+            .populate({
+                path: "product",
+                populate: {
+                    path: "category",
+                    select: "name"
+                }
+            })
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+
+        const count = await Favorites.countDocuments({ user: req.user._id });
+
+        // Format products with badges and discount info
+        const Product = require("../models/Product");
+        const formattedProducts = favorites.map(item => {
+            if (!item.product) return null;
+            
+            const product = item.product.toObject();
+            
+            // Calculate badges
+            const badges = [];
+            if (product.isNew) badges.push("NEW");
+            if (product.isHot) badges.push("HOT");
+            if (product.isSale) badges.push("SALE");
+            if (product.isLimited) badges.push("LIMITED");
+            
+            // Calculate discount percentage if originalPrice exists
+            let discountPercentage = 0;
+            if (product.originalPrice && product.originalPrice > product.price) {
+                discountPercentage = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+            }
+            
+            return {
+                _id: product._id,
+                title: product.title,
+                brand: product.brand,
+                images: product.images,
+                price: product.price,
+                originalPrice: product.originalPrice,
+                discountPercentage: discountPercentage > 0 ? `${discountPercentage}% OFF` : null,
+                badges,
+                category: product.category,
+                stock: product.stock,
+                rating: product.rating || 0,
+                reviewCount: product.reviewCount || 0,
+                isInFavorites: true, // Always true since it's from favorites
+                addedToFavoritesAt: item.createdAt
+            };
+        }).filter(Boolean);
 
         res.json({
             success: true,
-            favorites: favorites.map(item => item.product)
+            favorites: formattedProducts,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            total: count
         });
 
     } catch (error) {

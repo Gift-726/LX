@@ -94,6 +94,14 @@ const calculateShippingCost = async (req, res) => {
             });
         }
 
+        // Validate method ID format
+        if (!mongoose.Types.ObjectId.isValid(methodId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid shipping method ID format"
+            });
+        }
+
         const method = await ShippingMethod.findById(methodId);
 
         if (!method || !method.isActive) {

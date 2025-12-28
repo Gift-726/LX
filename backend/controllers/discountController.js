@@ -268,6 +268,62 @@ const createDiscountCode = async (req, res) => {
             });
         }
 
+        // Parse and validate applicableCategories
+        let parsedCategories = [];
+        if (applicableCategories) {
+            let categoriesArray = applicableCategories;
+            
+            // If it's a string, try to parse it
+            if (typeof applicableCategories === 'string') {
+                try {
+                    categoriesArray = JSON.parse(applicableCategories);
+                } catch (e) {
+                    // If JSON parse fails, treat as single value or comma-separated
+                    categoriesArray = applicableCategories.split(',').map(c => c.trim());
+                }
+            }
+            
+            // Ensure it's an array
+            if (!Array.isArray(categoriesArray)) {
+                categoriesArray = [categoriesArray];
+            }
+            
+            // Validate and convert to ObjectIds
+            for (const catId of categoriesArray) {
+                if (catId && mongoose.Types.ObjectId.isValid(catId)) {
+                    parsedCategories.push(new mongoose.Types.ObjectId(catId));
+                }
+            }
+        }
+
+        // Parse and validate applicableProducts
+        let parsedProducts = [];
+        if (applicableProducts) {
+            let productsArray = applicableProducts;
+            
+            // If it's a string, try to parse it
+            if (typeof applicableProducts === 'string') {
+                try {
+                    productsArray = JSON.parse(applicableProducts);
+                } catch (e) {
+                    // If JSON parse fails, treat as single value or comma-separated
+                    productsArray = applicableProducts.split(',').map(p => p.trim());
+                }
+            }
+            
+            // Ensure it's an array
+            if (!Array.isArray(productsArray)) {
+                productsArray = [productsArray];
+            }
+            
+            // Validate and convert to ObjectIds
+            for (const prodId of productsArray) {
+                if (prodId && mongoose.Types.ObjectId.isValid(prodId)) {
+                    parsedProducts.push(new mongoose.Types.ObjectId(prodId));
+                }
+            }
+        }
+
         const discountCode = await DiscountCode.create({
             code: code.toUpperCase(),
             description,
@@ -279,8 +335,8 @@ const createDiscountCode = async (req, res) => {
             validUntil: new Date(validUntil),
             usageLimit,
             userLimit: userLimit || 1,
-            applicableCategories: applicableCategories || [],
-            applicableProducts: applicableProducts || [],
+            applicableCategories: parsedCategories,
+            applicableProducts: parsedProducts,
             isActive: true
         });
 
@@ -327,6 +383,60 @@ const updateDiscountCode = async (req, res) => {
         }
         if (updates.validUntil) {
             updates.validUntil = new Date(updates.validUntil);
+        }
+
+        // Parse and validate applicableCategories if provided
+        if (updates.applicableCategories !== undefined) {
+            let parsedCategories = [];
+            if (updates.applicableCategories) {
+                let categoriesArray = updates.applicableCategories;
+                
+                if (typeof updates.applicableCategories === 'string') {
+                    try {
+                        categoriesArray = JSON.parse(updates.applicableCategories);
+                    } catch (e) {
+                        categoriesArray = updates.applicableCategories.split(',').map(c => c.trim());
+                    }
+                }
+                
+                if (!Array.isArray(categoriesArray)) {
+                    categoriesArray = [categoriesArray];
+                }
+                
+                for (const catId of categoriesArray) {
+                    if (catId && mongoose.Types.ObjectId.isValid(catId)) {
+                        parsedCategories.push(new mongoose.Types.ObjectId(catId));
+                    }
+                }
+            }
+            updates.applicableCategories = parsedCategories;
+        }
+
+        // Parse and validate applicableProducts if provided
+        if (updates.applicableProducts !== undefined) {
+            let parsedProducts = [];
+            if (updates.applicableProducts) {
+                let productsArray = updates.applicableProducts;
+                
+                if (typeof updates.applicableProducts === 'string') {
+                    try {
+                        productsArray = JSON.parse(updates.applicableProducts);
+                    } catch (e) {
+                        productsArray = updates.applicableProducts.split(',').map(p => p.trim());
+                    }
+                }
+                
+                if (!Array.isArray(productsArray)) {
+                    productsArray = [productsArray];
+                }
+                
+                for (const prodId of productsArray) {
+                    if (prodId && mongoose.Types.ObjectId.isValid(prodId)) {
+                        parsedProducts.push(new mongoose.Types.ObjectId(prodId));
+                    }
+                }
+            }
+            updates.applicableProducts = parsedProducts;
         }
 
         const discountCode = await DiscountCode.findByIdAndUpdate(id, updates, {
@@ -388,9 +498,68 @@ const deleteDiscountCode = async (req, res) => {
     }
 };
 
+/* ============================================================
+   GET AVAILABLE COUPONS (User-facing)
+============================================================ */
+const getAvailableCoupons = async (req, res) => {
+    try {
+        const now = new Date();
+
+        // Get active coupons that are currently valid
+        const coupons = await DiscountCode.find({
+            isActive: true,
+            validFrom: { $lte: now },
+            validUntil: { $gte: now },
+            $or: [
+                { usageLimit: null },
+                { $expr: { $lt: ["$usageCount", "$usageLimit"] } }
+            ]
+        })
+            .populate("applicableCategories", "name")
+            .populate("applicableProducts", "title images")
+            .sort({ discountValue: -1, createdAt: -1 });
+
+        // Format coupons for UI
+        const formattedCoupons = coupons.map(coupon => {
+            const discountText = coupon.discountType === "percentage" 
+                ? `${coupon.discountValue}% OFF`
+                : `N${coupon.discountValue} OFF`;
+
+            return {
+                _id: coupon._id,
+                code: coupon.code,
+                name: coupon.code, // Using code as name (e.g., "Gagnon-rosepink")
+                description: coupon.description || `A great fashion wear suitable for business and outings`,
+                discountText,
+                discountType: coupon.discountType,
+                discountValue: coupon.discountValue,
+                minOrderValue: coupon.minOrderValue,
+                validUntil: coupon.validUntil,
+                applicableCategories: coupon.applicableCategories,
+                applicableProducts: coupon.applicableProducts
+            };
+        });
+
+        res.json({
+            success: true,
+            coupons: formattedCoupons,
+            total: formattedCoupons.length
+        });
+
+    } catch (error) {
+        console.error("Get available coupons error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     validateDiscountCode,
     applyDiscountCode,
+    getAvailableCoupons,
     getDiscountCodes,
     createDiscountCode,
     updateDiscountCode,

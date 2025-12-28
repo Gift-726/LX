@@ -19,6 +19,18 @@ const orderRoutes = require("./routes/orderRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const shippingRoutes = require("./routes/shippingRoutes");
 const discountRoutes = require("./routes/discountRoutes");
+const disputeRoutes = require("./routes/disputeRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const contentRoutes = require("./routes/contentRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const adminUserRoutes = require("./routes/adminUserRoutes");
+const reportsRoutes = require("./routes/reportsRoutes");
+const bannerRoutes = require("./routes/bannerRoutes");
+const termsRoutes = require("./routes/termsRoutes");
+const pageRestrictionRoutes = require("./routes/pageRestrictionRoutes");
+const adminNotificationRoutes = require("./routes/adminNotificationRoutes");
+const adminReviewRoutes = require("./routes/adminReviewRoutes");
+const systemSettingsRoutes = require("./routes/systemSettingsRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -65,6 +77,18 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/discounts", discountRoutes);
+app.use("/api/disputes", disputeRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/content", contentRoutes);
+app.use("/api/admin/dashboard", dashboardRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/reports", reportsRoutes);
+app.use("/api/admin/reviews", adminReviewRoutes);
+app.use("/api/admin/notifications", adminNotificationRoutes);
+app.use("/api/admin/settings", systemSettingsRoutes);
+app.use("/api/banners", bannerRoutes);
+app.use("/api/terms", termsRoutes);
+app.use("/api/admin/page-restrictions", pageRestrictionRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

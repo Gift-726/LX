@@ -13,7 +13,9 @@ const {
 // Public routes
 router.get("/", getShippingMethods);
 router.get("/:id", getShippingMethodById);
-router.post("/calculate", calculateShippingCost);
+
+// Authenticated routes
+router.post("/calculate", protect, calculateShippingCost);
 
 // Admin routes
 router.post("/", protect, admin, createShippingMethod);

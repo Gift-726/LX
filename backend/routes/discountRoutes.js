@@ -4,6 +4,7 @@ const { protect, admin } = require("../middleware/auth");
 const {
     validateDiscountCode,
     applyDiscountCode,
+    getAvailableCoupons,
     getDiscountCodes,
     createDiscountCode,
     updateDiscountCode,
@@ -12,6 +13,7 @@ const {
 
 // Public routes
 router.post("/validate", validateDiscountCode);
+router.get("/available", getAvailableCoupons); // User-facing coupons endpoint
 router.post("/apply", protect, applyDiscountCode);
 
 // Admin routes

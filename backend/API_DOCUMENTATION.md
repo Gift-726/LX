@@ -3479,17 +3479,18 @@ curl "http://localhost:3000/api/shipping?country=Nigeria"
 
 **Endpoint:** `POST /api/shipping/calculate`
 
-**Authentication:** Not required (public endpoint)
+**Authentication:** Required
 
 **Request Headers:**
 ```http
+Authorization: Bearer <jwt_token>
 Content-Type: application/json
 ```
 
 **Request Body:**
 ```json
 {
-  "methodId": "675a1b2c3d4e5f6g7h8i9j0k",
+  "methodId": "694d80986452dfff25319c8",
   "weight": 2.5,
   "orderValue": 50000,
   "country": "Nigeria"
@@ -3543,9 +3544,20 @@ Content-Type: application/json
 }
 ```
 
+**Error Responses:**
+
+**401 - Unauthorized:**
+```json
+{
+  "success": false,
+  "message": "Not authorized to access this route"
+}
+```
+
 **Example Request (cURL):**
 ```bash
 curl -X POST http://localhost:3000/api/shipping/calculate \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "methodId": "675a1b2c3d4e5f6g7h8i9j0k",

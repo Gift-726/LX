@@ -14,7 +14,20 @@ const SearchHistory = require("../models/SearchHistory");
 ============================================================ */
 const createProduct = async (req, res) => {
     try {
-        const { title, description, price, currency, discountPercentage, category, images, tags, stock } = req.body;
+        const { 
+            title, 
+            description, 
+            price, 
+            currency, 
+            discountPercentage, 
+            category, 
+            images, 
+            tags, 
+            stock,
+            isAvailable = true,
+            sizes = [],
+            colors = []
+        } = req.body;
 
         // Validate required fields
         if (!title || !description || !price || !category) {
@@ -43,6 +56,20 @@ const createProduct = async (req, res) => {
             });
         }
 
+        // Validate sizes if provided
+        const validSizes = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "One Size"];
+        if (sizes.length > 0) {
+            const invalidSizes = sizes.filter(size => !validSizes.includes(size));
+            if (invalidSizes.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid sizes: ${invalidSizes.join(", ")}. Valid sizes are: ${validSizes.join(", ")}`
+                });
+            }
+        }
+
+        // Create product
+        const hasVariants = sizes.length > 0 && colors.length > 0;
         const product = await Product.create({
             title,
             description,
@@ -53,13 +80,49 @@ const createProduct = async (req, res) => {
             images: images || [],
             tags: tags || [],
             stock: stock || 0,
+            isAvailable: isAvailable !== undefined ? isAvailable : true,
+            hasVariants,
             createdBy: req.user._id
         });
+
+        // Create variants if sizes and colors are provided
+        const variants = [];
+        if (hasVariants) {
+            for (const size of sizes) {
+                for (const color of colors) {
+                    // Generate SKU
+                    const sku = `${product._id.toString().substring(0, 8).toUpperCase()}-${size}-${color.substring(0, 3).toUpperCase()}`;
+                    
+                    const variant = await ProductVariant.create({
+                        product: product._id,
+                        size,
+                        color,
+                        price: price, // Use base price, can be overridden
+                        stock: 0, // Default stock per variant
+                        sku
+                    });
+                    variants.push(variant);
+                }
+            }
+        }
+
+        // Calculate total stock from variants if they exist
+        if (variants.length > 0) {
+            const totalVariantStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+            product.stock = totalVariantStock;
+            await product.save();
+        }
+
+        // Populate product for response
+        const populatedProduct = await Product.findById(product._id)
+            .populate("category", "name")
+            .populate("createdBy", "firstname lastname");
 
         res.status(201).json({
             success: true,
             message: "Product created successfully",
-            product
+            product: populatedProduct,
+            variants: variants.length > 0 ? variants : undefined
         });
 
     } catch (error) {
@@ -70,6 +133,15 @@ const createProduct = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Invalid ID format",
+                error: error.message
+            });
+        }
+
+        // Handle duplicate key errors (e.g., SKU)
+        if (error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: "Duplicate entry. A product with similar attributes already exists.",
                 error: error.message
             });
         }
@@ -492,9 +564,102 @@ const deleteProduct = async (req, res) => {
     }
 };
 
+/* ============================================================
+   GET ALL PRODUCTS (Admin - with advanced filters)
+============================================================ */
+const getAdminProducts = async (req, res) => {
+    try {
+        const { 
+            search, 
+            category, 
+            minPrice, 
+            maxPrice, 
+            minStock, 
+            maxStock,
+            isAvailable,
+            page = 1, 
+            limit = 50 
+        } = req.query;
+
+        let query = {};
+
+        // Search by text
+        if (search && search.trim().length > 0) {
+            const searchTerm = search.trim();
+            const searchRegex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i");
+            query.$or = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { tags: { $in: [searchRegex] } }
+            ];
+        }
+
+        // Filter by category
+        if (category) {
+            if (mongoose.Types.ObjectId.isValid(category)) {
+                query.category = category;
+            }
+        }
+
+        // Filter by price range
+        if (minPrice || maxPrice) {
+            query.price = {};
+            if (minPrice) query.price.$gte = parseFloat(minPrice);
+            if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+        }
+
+        // Filter by stock range
+        if (minStock !== undefined || maxStock !== undefined) {
+            query.stock = {};
+            if (minStock !== undefined) query.stock.$gte = parseInt(minStock);
+            if (maxStock !== undefined) query.stock.$lte = parseInt(maxStock);
+        }
+
+        // Filter by availability status
+        if (isAvailable !== undefined) {
+            query.isAvailable = isAvailable === 'true';
+        }
+
+        const products = await Product.find(query)
+            .populate("category", "name")
+            .populate("createdBy", "firstname lastname")
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+
+        const count = await Product.countDocuments(query);
+
+        // Format products for admin view
+        const formattedProducts = products.map(product => {
+            const productObj = product.toObject();
+            return {
+                ...productObj,
+                status: productObj.isAvailable ? "active" : "inactive"
+            };
+        });
+
+        res.json({
+            success: true,
+            products: formattedProducts,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            total: count
+        });
+
+    } catch (error) {
+        console.error("Get admin products error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createProduct,
     getProducts,
+    getAdminProducts,
     getRecommendedProducts,
     getFeaturedProducts,
     getProductById,

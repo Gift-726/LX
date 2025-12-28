@@ -4,6 +4,7 @@ const { protect, admin } = require("../middleware/auth");
 const {
     createProduct,
     getProducts,
+    getAdminProducts,
     getRecommendedProducts,
     getFeaturedProducts,
     getProductById,
@@ -18,6 +19,7 @@ router.get("/featured", getFeaturedProducts);
 router.get("/:id", getProductById);
 
 // Admin routes
+router.get("/admin/all", protect, admin, getAdminProducts);
 router.post("/", protect, admin, createProduct);
 router.put("/:id", protect, admin, updateProduct);
 router.delete("/:id", protect, admin, deleteProduct);

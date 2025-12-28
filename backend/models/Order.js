@@ -40,7 +40,18 @@ const orderSchema = new mongoose.Schema(
         paymentMethod: { type: String }, // e.g., "card", "bank_transfer", "paypal"
         paymentReference: { type: String }, // Payment gateway reference
         notes: { type: String }, // Order notes
-        estimatedDelivery: { type: Date } // Estimated delivery date
+        estimatedDelivery: { type: Date }, // Estimated delivery date
+        trackingSteps: {
+            packaging: { completed: { type: Boolean, default: false }, completedAt: { type: Date } },
+            checking: { completed: { type: Boolean, default: false }, completedAt: { type: Date } },
+            shipping: { completed: { type: Boolean, default: false }, completedAt: { type: Date } },
+            delivery: { completed: { type: Boolean, default: false }, completedAt: { type: Date } },
+            readyForPickup: { completed: { type: Boolean, default: false }, completedAt: { type: Date } }
+        },
+        dispute: { 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: "Dispute" 
+        } // Reference to dispute if one exists
     },
     { timestamps: true }
 );

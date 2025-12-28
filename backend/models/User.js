@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ['user', 'admin'], default: 'user' }, // User role
     avatar: { type: String }, // Profile picture URL
     isVerified: { type: Boolean, default: false }, // Email verification status
+    isSuspended: { type: Boolean, default: false }, // Suspension status
+    suspendedAt: { type: Date }, // When user was suspended
+    suspendedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Admin who suspended
+    suspensionReason: { type: String }, // Reason for suspension
     verificationCode: { type: String }, // For 2FA login/registration
     verificationCodeExpiry: { type: Date }, // Expiry time for verification code
     resetCode: { type: String }, // For password reset
