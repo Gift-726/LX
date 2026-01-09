@@ -216,7 +216,7 @@ const createOrder = async (req, res) => {
             currency: "NGN",
             status: "pending",
             paymentStatus: "pending",
-            paymentMethod: paymentMethod || "card",
+            paymentMethod: paymentMethod || "paystack",
             notes
         });
 
@@ -228,24 +228,9 @@ const createOrder = async (req, res) => {
             }))
         );
 
-        // Update product stock and sales count
-        for (const cartItem of cartItems) {
-            const product = cartItem.product;
-            
-            // Update product stock
-            if (cartItem.variant) {
-                await ProductVariant.findByIdAndUpdate(cartItem.variant._id, {
-                    $inc: { stock: -cartItem.quantity }
-                });
-            }
-            
-            await Product.findByIdAndUpdate(product._id, {
-                $inc: { 
-                    stock: -cartItem.quantity,
-                    salesCount: cartItem.quantity
-                }
-            });
-        }
+        // NOTE: Stock reduction happens after payment verification
+        // This prevents stock from being reduced for unpaid orders
+        // Stock will be reduced in the payment verification endpoint
 
         // Clear cart
         await CartItem.deleteMany({ cart: cart._id });

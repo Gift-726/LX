@@ -30,8 +30,7 @@ const pageRestrictionSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Index for faster queries
-pageRestrictionSchema.index({ pageName: 1 });
+// pageName already has unique index from unique: true
 
 module.exports = mongoose.model("PageRestriction", pageRestrictionSchema);
 

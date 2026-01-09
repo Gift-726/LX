@@ -16,10 +16,24 @@
    - [Products](#products-endpoints)
    - [Categories](#categories-endpoints)
    - [User Management](#user-management-endpoints)
+   - [Shopping Cart](#shopping-cart-endpoints)
+   - [Orders](#orders-endpoints)
+   - [Addresses](#addresses-endpoints)
+   - [Shipping](#shipping-endpoints)
+   - [Discounts](#discounts-endpoints)
+   - [Reviews](#reviews-endpoints)
+   - [Payments](#payments-endpoints)
+   - [Banners](#banners-endpoints)
+   - [Disputes](#disputes-endpoints)
+   - [Terms & Conditions](#terms--conditions-endpoints)
+   - [Content](#content-endpoints)
+   - [Admin Endpoints](#admin-endpoints)
 5. [Data Models](#data-models)
 6. [Error Handling](#error-handling)
-7. [Best Practices](#best-practices)
-8. [Testing](#testing)
+7. [Frontend Integration Guide](#frontend-integration-guide)
+8. [Best Practices](#best-practices)
+9. [Testing](#testing)
+10. [TypeScript Types](#typescript-types)
 
 ---
 
@@ -31,31 +45,71 @@ LX is a comprehensive e-commerce backend API that provides secure authentication
 
 ### Key Features
 
-- Two-Factor Authentication (2FA) - Secure login and registration with email verification
-- Gmail Integration - Professional email delivery for verification codes
-- OAuth Support - Google and Facebook social login
-- Password Reset - Secure password recovery via email
-- Product Management - Full CRUD operations for products with search, filtering, and badges
-- Category Management - Hierarchical category system with 11 default categories
-- User Profiles - User information and preferences with last selected category tracking
-- Search Functionality - Advanced product search with automatic history saving
-- Search History - Automatic tracking of user search queries
-- Favorites System - Save and manage favorite products
-- Notifications - User notification system
-- Featured Products - Highlight special offers and featured items
-- Product Badges - Dynamic badges (HOT, NEW, SALE, LIMITED) based on product properties
+- **Two-Factor Authentication (2FA)** - Secure login and registration with email verification
+- **Gmail Integration** - Professional email delivery for verification codes
+- **OAuth Support** - Google and Facebook social login
+- **Password Reset** - Secure password recovery via email
+- **Product Management** - Full CRUD operations for products with search, filtering, and badges
+- **Product Variants** - Size and color variants with individual stock tracking
+- **Category Management** - Hierarchical category system with 11 default categories
+- **User Profiles** - User information and preferences with last selected category tracking
+- **Search Functionality** - Advanced product search with automatic history saving
+- **Search History** - Automatic tracking of user search queries
+- **Favorites System** - Save and manage favorite products
+- **Shopping Cart** - Full cart management with variant support
+- **Order Management** - Complete order processing with status tracking
+- **Address Management** - Multiple shipping addresses with default selection
+- **Shipping Methods** - Multiple shipping options with cost calculation
+- **Discount Codes** - Flexible discount system with validation
+- **Reviews & Ratings** - Product reviews and rating system
+- **Payment Integration** - Payment processing and verification
+- **Notifications** - User notification system
+- **Featured Products** - Highlight special offers and featured items
+- **Product Badges** - Dynamic badges (HOT, NEW, SALE, LIMITED) based on product properties
+- **Banners** - Promotional banner management
+- **Disputes** - Order dispute management
+- **Admin Dashboard** - Comprehensive admin panel with analytics
+- **Reports** - Sales and analytics reports with export functionality
 
 ### Who Can Use This Documentation?
 
-- **Frontend Developers** - Integrate the API into web or mobile applications
-- **Backend Developers** - Understand the API structure and data flow
-- **Project Managers** - Understand system capabilities and requirements
-- **QA Testers** - Test API endpoints and functionality
-- **Non-Technical Stakeholders** - Understand what the system can do
+- **Frontend Developers** - Integrate the API into web or mobile applications with ready-to-use code examples
+- **Backend Developers** - Understand the API structure, data models, and data flow
+- **Full-Stack Developers** - Complete reference for both frontend and backend integration
+- **Project Managers** - Understand system capabilities, features, and requirements
+- **QA Testers** - Test API endpoints and functionality with detailed examples
+- **Non-Technical Stakeholders** - Understand what the system can do and its features
+
+### Documentation Highlights
+
+- ✅ **Complete API Reference** - All endpoints documented with examples
+- ✅ **Frontend Integration Guide** - Ready-to-use code examples in TypeScript/JavaScript
+- ✅ **TypeScript Types** - Full type definitions for all models and responses
+- ✅ **Data Models** - Complete schema documentation for all entities
+- ✅ **Error Handling** - Comprehensive error scenarios and handling
+- ✅ **Best Practices** - Industry-standard integration patterns
+- ✅ **Product Variants** - Complete variant management documentation
 
 ---
 
 ## Getting Started
+
+### Quick Start for Frontend Developers
+
+If you're a frontend developer looking to integrate with the API:
+
+1. **Ensure the backend server is running** on `http://localhost:3000`
+2. **Check server health**: `GET /health`
+3. **Review the [Frontend Integration Guide](#frontend-integration-guide)** for code examples
+4. **Check [TypeScript Types](#typescript-types)** for type definitions
+5. **Start with Authentication**: Register/Login endpoints require 2FA (two-step process)
+
+### Common Integration Patterns
+
+- **Authentication Flow**: Register → Verify → Login → Verify → Get Token
+- **Product Browsing**: Get Categories → Get Products by Category → Get Product Details
+- **Shopping Flow**: Add to Cart → Get Cart → Create Order → Process Payment
+- **User Features**: Profile Management → Addresses → Orders → Favorites
 
 ### Prerequisites
 
@@ -133,6 +187,20 @@ The server will start on `http://localhost:3000`
 #### Step 5: Test the API
 ```bash
 node backend/test-api.js
+```
+
+#### Step 6: Verify Server Health
+```bash
+curl http://localhost:3000/health
+```
+
+Expected response:
+```json
+{
+  "success": true,
+  "message": "Server is running",
+  "timestamp": "2024-01-15T10:00:00.000Z"
+}
 ```
 
 ---
@@ -220,6 +288,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 All API endpoints start with: `http://localhost:3000/api`
 
+### Health Check
+
+- `GET /health` - Server health status (no `/api` prefix)
+
 ### Quick Reference - All Endpoints
 
 #### Authentication (`/api/auth`)
@@ -238,6 +310,7 @@ All API endpoints start with: `http://localhost:3000/api`
 - `GET /api/products/featured` - Get featured products
 - `GET /api/products/recommended` - Get recommended products
 - `GET /api/products/:id` - Get product by ID (includes variants)
+- `GET /api/products/admin/all` - Get all products with admin details (Admin only)
 - `POST /api/products` - Create product (Admin only)
 - `PUT /api/products/:id` - Update product (Admin only)
 - `DELETE /api/products/:id` - Delete product (Admin only)
@@ -303,6 +376,97 @@ All API endpoints start with: `http://localhost:3000/api`
 - `POST /api/discounts` - Create discount code (Admin only)
 - `PUT /api/discounts/:id` - Update discount code (Admin only)
 - `DELETE /api/discounts/:id` - Delete discount code (Admin only)
+
+#### Reviews (`/api/reviews`)
+- `GET /api/reviews/product/:productId` - Get reviews for a product (public)
+- `POST /api/reviews` - Create review (authenticated)
+- `GET /api/reviews/my-reviews` - Get user's reviews (authenticated)
+- `PUT /api/reviews/:id` - Update review (authenticated)
+- `DELETE /api/reviews/:id` - Delete review (authenticated)
+- `GET /api/reviews/admin/all` - Get all reviews (Admin only)
+- `PUT /api/reviews/:id/status` - Update review status (Admin only)
+
+#### Payments (`/api/payments`)
+- `POST /api/payments/initialize` - Initialize payment (authenticated)
+- `GET /api/payments/verify/:reference` - Verify payment (authenticated)
+- `GET /api/payments/status/:orderId` - Get payment status (authenticated)
+- `POST /api/payments/refund/:orderId` - Refund payment (Admin only)
+
+#### Banners (`/api/banners`)
+- `GET /api/banners/active` - Get active banners (public)
+- `GET /api/banners` - Get all banners (Admin only)
+- `GET /api/banners/:id` - Get banner by ID (Admin only)
+- `GET /api/banners/:id/preview` - Preview banner (Admin only)
+- `POST /api/banners` - Create banner (Admin only)
+- `PUT /api/banners/:id` - Update banner (Admin only)
+- `DELETE /api/banners/:id` - Delete banner (Admin only)
+
+#### Disputes (`/api/disputes`)
+- `POST /api/disputes` - Create dispute (authenticated)
+- `GET /api/disputes` - Get user's disputes (authenticated)
+- `GET /api/disputes/:id` - Get dispute by ID (authenticated)
+- `GET /api/disputes/admin/all` - Get all disputes (Admin only)
+- `PUT /api/disputes/:id/status` - Update dispute status (Admin only)
+
+#### Terms & Conditions (`/api/terms`)
+- `GET /api/terms/active` - Get active terms (public)
+- `GET /api/terms` - Get all terms (Admin only)
+- `GET /api/terms/:id` - Get terms by ID (Admin only)
+- `POST /api/terms` - Create terms (Admin only)
+- `PUT /api/terms/:id` - Update terms (Admin only)
+- `DELETE /api/terms/:id` - Delete terms (Admin only)
+
+#### Content (`/api/content`)
+- `GET /api/content/help-center` - Get help center content (public)
+- `GET /api/content/privacy-policy` - Get privacy policy (public)
+
+#### Admin Dashboard (`/api/admin/dashboard`)
+- `GET /api/admin/dashboard` - Get dashboard data (Admin only)
+- `GET /api/admin/dashboard/overview` - Get dashboard overview (Admin only)
+- `GET /api/admin/dashboard/sales-trend` - Get sales trend (Admin only)
+- `GET /api/admin/dashboard/popular-items` - Get popular items (Admin only)
+
+#### Admin User Management (`/api/admin/users`)
+- `GET /api/admin/users` - Get all users (Admin only)
+- `POST /api/admin/users` - Create user (Admin only)
+- `GET /api/admin/users/:id` - Get user by ID (Admin only)
+- `PUT /api/admin/users/:id` - Update user (Admin only)
+- `PUT /api/admin/users/:id/suspend` - Suspend user (Admin only)
+- `PUT /api/admin/users/:id/unsuspend` - Unsuspend user (Admin only)
+- `DELETE /api/admin/users/:id` - Delete user (Admin only)
+- `GET /api/admin/users/suspended` - Get suspended users (Admin only)
+- `GET /api/admin/users/suspended/count` - Get suspended users count (Admin only)
+
+#### Admin Reports (`/api/admin/reports`)
+- `GET /api/admin/reports` - Get reports (Admin only)
+- `GET /api/admin/reports/overview` - Get reports overview (Admin only)
+- `GET /api/admin/reports/revenue-chart` - Get revenue chart data (Admin only)
+- `GET /api/admin/reports/sales-trend-chart` - Get sales trend chart (Admin only)
+- `GET /api/admin/reports/user-engagement-chart` - Get user engagement chart (Admin only)
+- `GET /api/admin/reports/export/pdf` - Export reports as PDF (Admin only)
+- `GET /api/admin/reports/export/excel` - Export reports as Excel (Admin only)
+
+#### Admin Reviews (`/api/admin/reviews`)
+- `GET /api/admin/reviews/overview` - Get reviews overview (Admin only)
+- `GET /api/admin/reviews` - Get all reviews and feedback (Admin only)
+- `PUT /api/admin/reviews/:id/reply` - Reply to review (Admin only)
+
+#### Admin Notifications (`/api/admin/notifications`)
+- `GET /api/admin/notifications` - Get all notifications (Admin only)
+- `POST /api/admin/notifications` - Create notification (Admin only)
+- `PUT /api/admin/notifications/:id` - Update notification (Admin only)
+- `POST /api/admin/notifications/:id/send` - Send notification (Admin only)
+- `DELETE /api/admin/notifications/:id` - Delete notification (Admin only)
+
+#### System Settings (`/api/admin/settings`)
+- `GET /api/admin/settings` - Get system settings (Admin only)
+- `PUT /api/admin/settings` - Update system settings (Admin only)
+
+#### Page Restrictions (`/api/admin/page-restrictions`)
+- `GET /api/admin/page-restrictions` - Get all page restrictions (Admin only)
+- `GET /api/admin/page-restrictions/:pageName` - Get page restriction (Admin only)
+- `GET /api/admin/page-restrictions/check/:pageName` - Check page access (authenticated)
+- `PUT /api/admin/page-restrictions/:pageName` - Update page restriction (Admin only)
 
 ---
 
@@ -1209,7 +1373,7 @@ curl -X GET "http://localhost:3000/api/products?page=1&limit=20"
 **URL Parameters:**
 - `id` (required): Product ID
 
-**Success Response (200):**
+**Success Response (200) - Product without Variants:**
 ```json
 {
   "success": true,
@@ -1232,9 +1396,59 @@ curl -X GET "http://localhost:3000/api/products?page=1&limit=20"
     "tags": ["Men", "Formal", "Business"],
     "rating": 4.5,
     "stock": 50,
+    "hasVariants": false,
     "createdBy": "675a1b2c3d4e5f6g7h8i9j0m",
     "calculatedBadges": ["HOT", "SALE"],
     "isInFavorites": false,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+**Success Response (200) - Product with Variants:**
+```json
+{
+  "success": true,
+  "product": {
+    "_id": "675a1b2c3d4e5f6g7h8i9j0k",
+    "title": "Premium Suit",
+    "description": "High-quality business suit made from premium materials",
+    "price": 2999.99,
+    "currency": "NGN",
+    "category": {
+      "_id": "675a1b2c3d4e5f6g7h8i9j0l",
+      "name": "Formal Wear"
+    },
+    "images": ["https://example.com/suit1.jpg"],
+    "tags": ["Men", "Formal"],
+    "rating": 4.5,
+    "stock": 50,
+    "hasVariants": true,
+    "calculatedBadges": ["HOT", "SALE"],
+    "isInFavorites": false,
+    "variants": [
+      {
+        "_id": "675a1b2c3d4e5f6g7h8i9j0n",
+        "size": "M",
+        "color": "Navy Blue",
+        "colorCode": "#000080",
+        "price": 2999.99,
+        "stock": 10,
+        "sku": "675A1B2C-M-NAV",
+        "images": []
+      },
+      {
+        "_id": "675a1b2c3d4e5f6g7h8i9j0o",
+        "size": "L",
+        "color": "Navy Blue",
+        "colorCode": "#000080",
+        "price": 2999.99,
+        "stock": 15,
+        "sku": "675A1B2C-L-NAV",
+        "images": []
+      }
+    ],
     "createdAt": "2024-01-15T10:30:00.000Z",
     "updatedAt": "2024-01-15T10:30:00.000Z"
   }
@@ -1276,7 +1490,7 @@ Authorization: Bearer <admin_jwt_token>
 Content-Type: application/json
 ```
 
-**Request Body:**
+**Request Body (Simple Product):**
 ```json
 {
   "title": "Premium Suit",
@@ -1300,6 +1514,22 @@ Content-Type: application/json
 }
 ```
 
+**Request Body (Product with Variants):**
+```json
+{
+  "title": "Premium Suit",
+  "description": "High-quality business suit made from premium materials",
+  "price": 2999.99,
+  "currency": "NGN",
+  "category": "675a1b2c3d4e5f6g7h8i9j0l",
+  "brand": "Gagnon",
+  "images": ["https://example.com/suit1.jpg"],
+  "tags": ["Men", "Formal"],
+  "sizes": ["S", "M", "L", "XL"],
+  "colors": ["Navy Blue", "Black", "Charcoal Gray"]
+}
+```
+
 **Field Requirements:**
 - `title` (required): Product name
 - `description` (required): Product description
@@ -1314,11 +1544,20 @@ Content-Type: application/json
 - `images` (optional): Array of image URLs
 - `tags` (optional): Array of tag strings
 - `stock` (optional): Total stock quantity (default: 0). If `hasVariants` is true, this represents the sum of all variant stock.
-- `hasVariants` (optional): Whether product has size/color variants (default: false). If true, create variants separately using ProductVariant model.
+- `sizes` (optional): Array of size strings for variants. Valid sizes: `["XS", "S", "M", "L", "XL", "XXL", "XXXL", "One Size"]`. If provided with `colors`, variants will be automatically created.
+- `colors` (optional): Array of color strings for variants. If provided with `sizes`, variants will be automatically created.
+- `hasVariants` (optional): Whether product has size/color variants (default: false). Automatically set to `true` if both `sizes` and `colors` are provided.
 - `badges` (optional): Array of manual badges: ["HOT", "NEW", "SALE", "BESTSELLER", "LIMITED"]
 - `isFeatured` (optional): Whether product is featured (default: false)
 - `featuredAt` (optional): When product was featured (Date)
 - `featuredUntil` (optional): Feature expiry date (Date)
+- `isAvailable` (optional): Whether product is available for purchase (default: true)
+
+**Note:** When `sizes` and `colors` are both provided, the system automatically:
+1. Sets `hasVariants` to `true`
+2. Creates all possible variant combinations (size × color)
+3. Generates unique SKUs for each variant
+4. Sets initial stock to 0 for each variant (update via ProductVariant model)
 
 **Success Response (201):**
 ```json
@@ -4105,6 +4344,538 @@ Authorization: Bearer <admin_jwt_token>
 }
 ```
 
+### ProductVariant Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique variant ID
+  product: ObjectId,                // Required, Reference to Product
+  size: String,                     // Required: "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL" | "One Size"
+  color: String,                    // Required, Color name (e.g., "Navy Blue", "Rose pink")
+  colorCode: String,                // Optional, Hex color code (e.g., "#FF69B4")
+  price: Number,                    // Optional, Variant-specific price (defaults to product price)
+  stock: Number,                    // Default: 0, Stock for this specific variant
+  images: [String],                 // Optional, Variant-specific images
+  sku: String,                      // Unique Stock Keeping Unit (auto-generated)
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+**Note:**
+- Variants are automatically created when a product is created with both `sizes` and `colors` arrays
+- Each variant gets a unique SKU in format: `{productId}-{size}-{colorCode}`
+- The combination of `product`, `size`, and `color` must be unique
+- Variant stock is tracked separately from product stock
+- When adding variants to cart, use the `variantId` field
+
+### Cart Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique cart ID
+  user: ObjectId,                   // Required, Reference to User
+  items: [CartItem],                // Array of cart items
+  subtotal: Number,                 // Calculated subtotal
+  itemCount: Number,                // Number of unique items
+  totalItems: Number,                // Total quantity of all items
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### CartItem Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique cart item ID
+  cart: ObjectId,                   // Required, Reference to Cart
+  product: ObjectId,                 // Required, Reference to Product
+  variant: ObjectId,                 // Optional, Reference to ProductVariant (if product has variants)
+  size: String,                     // Optional, Size (legacy support)
+  color: Object,                    // Optional, Color object (legacy support)
+  quantity: Number,                  // Required, Quantity (min: 1)
+  price: Number,                    // Price at time of adding to cart
+  subtotal: Number,                 // Calculated: quantity × price
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Order Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique order ID
+  orderNumber: String,               // Unique order number (format: "ORD-XXXXX-XXXX")
+  user: ObjectId,                   // Required, Reference to User
+  shippingAddress: ObjectId,         // Required, Reference to Address
+  shippingMethod: ObjectId,         // Required, Reference to ShippingMethod
+  items: [OrderItem],                // Array of order items
+  subtotal: Number,                 // Subtotal before discounts
+  shippingCost: Number,             // Shipping cost
+  discountCode: String,             // Optional, Discount code used
+  discountAmount: Number,           // Discount amount applied
+  tax: Number,                      // Tax amount
+  total: Number,                    // Final total
+  currency: String,                 // Currency code (default: "NGN")
+  status: String,                   // "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded"
+  paymentStatus: String,            // "pending" | "paid" | "failed" | "refunded"
+  paymentMethod: String,            // "card" | "bank_transfer" | "cash_on_delivery"
+  estimatedDelivery: Date,          // Optional, Estimated delivery date
+  notes: String,                    // Optional, Order notes
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### OrderItem Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique order item ID
+  order: ObjectId,                  // Required, Reference to Order
+  product: ObjectId,                // Required, Reference to Product
+  variant: ObjectId,                // Optional, Reference to ProductVariant
+  size: String,                     // Optional, Size
+  color: Object,                    // Optional, Color object
+  quantity: Number,                 // Required, Quantity ordered
+  price: Number,                    // Price at time of order
+  subtotal: Number,                 // Calculated: quantity × price
+  createdAt: Date
+}
+```
+
+### Address Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique address ID
+  user: ObjectId,                   // Required, Reference to User
+  title: String,                    // Optional: "Mr", "Mrs", "Ms", "Miss", "Dr", "Prof", or ""
+  firstname: String,                // Required
+  lastname: String,                 // Required
+  email: String,                    // Required
+  phone: String,                    // Required
+  country: String,                  // Default: "Nigeria"
+  region: String,                   // State/Province
+  city: String,                     // Required
+  address: String,                  // Required, Street address
+  postalCode: String,               // Optional, Postal/ZIP code
+  isDefault: Boolean,              // Default: false
+  addressType: String,             // "home" | "work" | "other" (default: "home")
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### ShippingMethod Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique shipping method ID
+  name: String,                     // Required, Unique (e.g., "DHL EXPRESS INTERNATIONAL")
+  description: String,             // Optional
+  deliveryTime: String,             // Optional (e.g., "10 business days")
+  deliveryTimeDays: Number,         // Optional, Number of days
+  baseCost: Number,                 // Default: 0, Base shipping cost
+  costPerKg: Number,                // Default: 0, Cost per kilogram
+  availableCountries: [String],     // Optional, Array of country names (empty = all countries)
+  minOrderValue: Number,            // Default: 0, Minimum order value for free shipping
+  maxWeight: Number,                 // Optional, Maximum weight in kg
+  icon: String,                     // Optional, Icon URL
+  isActive: Boolean,                // Default: true
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### DiscountCode Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique discount code ID
+  code: String,                     // Required, Unique, Uppercase (e.g., "SAVE20")
+  description: String,              // Optional
+  discountType: String,            // Required: "percentage" | "fixed"
+  discountValue: Number,           // Required, Percentage (0-100) or fixed amount
+  minOrderValue: Number,           // Default: 0, Minimum order value
+  maxDiscount: Number,             // Optional, Maximum discount amount (for percentage codes)
+  validFrom: Date,                 // Required, Start date
+  validUntil: Date,                // Required, End date
+  usageLimit: Number,               // Optional, Total usage limit (null = unlimited)
+  usageCount: Number,               // Default: 0, Current usage count
+  userLimit: Number,                // Default: 1, Usage limit per user
+  applicableCategories: [ObjectId], // Optional, Array of category IDs (empty = all categories)
+  applicableProducts: [ObjectId],   // Optional, Array of product IDs (empty = all products)
+  isActive: Boolean,               // Default: true
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Review Model
+
+```javascript
+{
+  _id: ObjectId,                    // Unique review ID
+  user: ObjectId,                   // Required, Reference to User
+  product: ObjectId,                // Required, Reference to Product
+  rating: Number,                   // Required, Range: 1-5
+  title: String,                   // Optional, Review title
+  comment: String,                 // Optional, Review text
+  images: [String],                // Optional, Array of image URLs
+  status: String,                  // "pending" | "approved" | "rejected" (default: "pending")
+  adminReply: String,              // Optional, Admin reply to review
+  adminReplyAt: Date,              // Optional, When admin replied
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+## Frontend Integration Guide
+
+This section provides practical examples for frontend developers integrating with the LX API.
+
+### Setting Up API Client
+
+#### JavaScript/TypeScript (Fetch API)
+
+```typescript
+// api/client.ts
+const API_BASE_URL = 'http://localhost:3000/api';
+
+class APIClient {
+  private baseURL: string;
+  private token: string | null = null;
+
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+    // Load token from localStorage
+    this.token = localStorage.getItem('auth_token');
+  }
+
+  setToken(token: string) {
+    this.token = token;
+    localStorage.setItem('auth_token', token);
+  }
+
+  clearToken() {
+    this.token = null;
+    localStorage.removeItem('auth_token');
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'An error occurred');
+    }
+
+    return data;
+  }
+
+  // Authentication methods
+  async register(userData: RegisterData) {
+    return this.request<RegisterResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async verifyRegistration(email: string, code: string) {
+    const response = await this.request<VerifyResponse>('/auth/verify-registration', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+    if (response.token) {
+      this.setToken(response.token);
+    }
+    return response;
+  }
+
+  async login(email: string, password: string) {
+    return this.request<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async verifyLogin(email: string, code: string) {
+    const response = await this.request<VerifyResponse>('/auth/verify-login', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+    if (response.token) {
+      this.setToken(response.token);
+    }
+    return response;
+  }
+
+  // Product methods
+  async getProducts(params?: ProductQueryParams) {
+    const queryString = new URLSearchParams(
+      params as Record<string, string>
+    ).toString();
+    return this.request<ProductsResponse>(`/products?${queryString}`);
+  }
+
+  async getProduct(id: string) {
+    return this.request<ProductResponse>(`/products/${id}`);
+  }
+
+  // Cart methods
+  async getCart() {
+    return this.request<CartResponse>('/cart');
+  }
+
+  async addToCart(productId: string, variantId?: string, quantity: number = 1) {
+    return this.request<CartItemResponse>('/cart', {
+      method: 'POST',
+      body: JSON.stringify({ productId, variantId, quantity }),
+    });
+  }
+
+  // Order methods
+  async createOrder(orderData: CreateOrderData) {
+    return this.request<OrderResponse>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  }
+}
+
+export const apiClient = new APIClient(API_BASE_URL);
+```
+
+### 2FA Flow Implementation
+
+```typescript
+// Example: Registration flow with 2FA
+async function handleRegistration(userData: RegisterData) {
+  try {
+    // Step 1: Initiate registration
+    const registerResponse = await apiClient.register(userData);
+    
+    // Show verification code input
+    const code = await promptForVerificationCode(registerResponse.email);
+    
+    // Step 2: Verify registration
+    const verifyResponse = await apiClient.verifyRegistration(
+      registerResponse.email,
+      code
+    );
+    
+    // User is now logged in (token stored automatically)
+    console.log('Registration successful!', verifyResponse.user);
+    return verifyResponse;
+  } catch (error) {
+    console.error('Registration failed:', error);
+    throw error;
+  }
+}
+
+// Example: Login flow with 2FA
+async function handleLogin(email: string, password: string) {
+  try {
+    // Step 1: Initiate login
+    const loginResponse = await apiClient.login(email, password);
+    
+    // Show verification code input
+    const code = await promptForVerificationCode(email);
+    
+    // Step 2: Verify login
+    const verifyResponse = await apiClient.verifyLogin(email, code);
+    
+    // User is now logged in
+    console.log('Login successful!', verifyResponse.user);
+    return verifyResponse;
+  } catch (error) {
+    console.error('Login failed:', error);
+    throw error;
+  }
+}
+```
+
+### Product Variants Handling
+
+```typescript
+// Example: Displaying product with variants
+async function displayProduct(productId: string) {
+  const product = await apiClient.getProduct(productId);
+  
+  if (product.product.hasVariants && product.product.variants) {
+    // Group variants by size and color
+    const variantsBySize = groupVariantsBySize(product.product.variants);
+    const availableColors = getAvailableColors(product.product.variants);
+    
+    // Display size and color selectors
+    renderVariantSelector(variantsBySize, availableColors);
+  } else {
+    // Simple product without variants
+    renderSimpleProduct(product.product);
+  }
+}
+
+// Example: Adding variant product to cart
+async function addVariantToCart(
+  productId: string,
+  variantId: string,
+  quantity: number
+) {
+  try {
+    const response = await apiClient.addToCart(productId, variantId, quantity);
+    console.log('Item added to cart:', response);
+    return response;
+  } catch (error) {
+    if (error.message.includes('Insufficient stock')) {
+      // Handle stock error
+      showStockError(error.message);
+    }
+    throw error;
+  }
+}
+```
+
+### Search with Auto-History
+
+```typescript
+// Example: Search products (automatically saves to history if authenticated)
+async function searchProducts(query: string) {
+  try {
+    const response = await apiClient.getProducts({ search: query });
+    // Search is automatically saved to user's history if authenticated
+    return response.products;
+  } catch (error) {
+    console.error('Search failed:', error);
+    throw error;
+  }
+}
+
+// Get user's search history
+async function getSearchHistory() {
+  try {
+    const response = await apiClient.request<SearchHistoryResponse>(
+      '/user/search-history'
+    );
+    return response.history;
+  } catch (error) {
+    console.error('Failed to get search history:', error);
+    throw error;
+  }
+}
+```
+
+### Error Handling Best Practices
+
+```typescript
+// Example: Comprehensive error handling
+async function handleAPIRequest<T>(
+  request: () => Promise<T>
+): Promise<T> {
+  try {
+    return await request();
+  } catch (error: any) {
+    // Handle specific error types
+    if (error.message.includes('Not authorized')) {
+      // Token expired or invalid
+      apiClient.clearToken();
+      redirectToLogin();
+      throw new Error('Session expired. Please login again.');
+    }
+    
+    if (error.message.includes('Not found')) {
+      // Resource not found
+      showNotFoundError();
+      throw error;
+    }
+    
+    if (error.message.includes('expired')) {
+      // Verification code expired
+      showExpiredCodeError();
+      throw error;
+    }
+    
+    // Generic error
+    showGenericError(error.message);
+    throw error;
+  }
+}
+```
+
+### React Hook Example
+
+```typescript
+// Example: Custom React hook for products
+import { useState, useEffect } from 'react';
+import { apiClient } from './api/client';
+
+export function useProducts(filters?: ProductQueryParams) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        setLoading(true);
+        const response = await apiClient.getProducts(filters);
+        setProducts(response.products);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProducts();
+  }, [filters]);
+
+  return { products, loading, error };
+}
+
+// Usage in component
+function ProductList() {
+  const { products, loading, error } = useProducts({ 
+    category: '675a1b2c3d4e5f6g7h8i9j0l',
+    page: 1,
+    limit: 20
+  });
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      {products.map(product => (
+        <ProductCard key={product._id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
 ---
 
 ## Error Handling
@@ -4365,6 +5136,348 @@ node backend/test-2fa.js
 
 ---
 
+## TypeScript Types
+
+For TypeScript projects, here are the type definitions for common API responses:
+
+```typescript
+// Base response types
+interface APIResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
+// User types
+interface User {
+  _id: string;
+  title?: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone?: string;
+  gender?: string;
+  role: 'user' | 'admin';
+  avatar?: string;
+  isVerified: boolean;
+  marketingPreferences?: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+  };
+  defaultAddress?: Address;
+  lastSelectedCategory?: Category;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Product types
+interface Product {
+  _id: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  displayCurrency?: string;
+  displayPrice?: number;
+  discountPercentage: number;
+  category: Category | string;
+  brand?: string;
+  releaseDate?: string;
+  images: string[];
+  tags: string[];
+  rating: number;
+  stock: number;
+  salesCount: number;
+  hasVariants: boolean;
+  variants?: ProductVariant[];
+  isFeatured: boolean;
+  badges?: string[];
+  calculatedBadges?: string[];
+  isInFavorites?: boolean;
+  isAvailable: boolean;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ProductVariant {
+  _id: string;
+  product: string;
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'XXXL' | 'One Size';
+  color: string;
+  colorCode?: string;
+  price?: number;
+  stock: number;
+  images?: string[];
+  sku: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Category types
+interface Category {
+  _id: string;
+  name: string;
+  image?: string;
+  icon?: string;
+  parentCategory?: Category | string;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Cart types
+interface Cart {
+  _id: string;
+  user: string;
+  items: CartItem[];
+  subtotal: number;
+  itemCount: number;
+  totalItems: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CartItem {
+  _id: string;
+  cart: string;
+  product: Product;
+  variant?: ProductVariant;
+  size?: string;
+  color?: { name: string; hex: string };
+  quantity: number;
+  price: number;
+  subtotal: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Order types
+interface Order {
+  _id: string;
+  orderNumber: string;
+  user: string;
+  shippingAddress: Address;
+  shippingMethod: ShippingMethod;
+  items: OrderItem[];
+  subtotal: number;
+  shippingCost: number;
+  discountCode?: string;
+  discountAmount: number;
+  tax: number;
+  total: number;
+  currency: string;
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentMethod: string;
+  estimatedDelivery?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface OrderItem {
+  _id: string;
+  order: string;
+  product: Product;
+  variant?: ProductVariant;
+  size?: string;
+  color?: { name: string; hex: string };
+  quantity: number;
+  price: number;
+  subtotal: number;
+  createdAt: string;
+}
+
+// Address types
+interface Address {
+  _id: string;
+  user: string;
+  title?: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone: string;
+  country: string;
+  region?: string;
+  city: string;
+  address: string;
+  postalCode?: string;
+  isDefault: boolean;
+  addressType: 'home' | 'work' | 'other';
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Shipping types
+interface ShippingMethod {
+  _id: string;
+  name: string;
+  description?: string;
+  deliveryTime?: string;
+  deliveryTimeDays?: number;
+  baseCost: number;
+  costPerKg: number;
+  availableCountries: string[];
+  minOrderValue: number;
+  maxWeight?: number;
+  icon?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Discount types
+interface DiscountCode {
+  _id: string;
+  code: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscount?: number;
+  validFrom: string;
+  validUntil: string;
+  usageLimit?: number;
+  usageCount: number;
+  userLimit: number;
+  applicableCategories: string[];
+  applicableProducts: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Review types
+interface Review {
+  _id: string;
+  user: User | string;
+  product: string;
+  rating: number;
+  title?: string;
+  comment?: string;
+  images?: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  adminReply?: string;
+  adminReplyAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Request/Response types
+interface RegisterData {
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface RegisterResponse {
+  success: boolean;
+  message: string;
+  userId: string;
+  email: string;
+  expiresIn: string;
+  isFallback: boolean;
+}
+
+interface VerifyResponse {
+  success: boolean;
+  message: string;
+  token: string;
+  user: User;
+}
+
+interface LoginResponse {
+  success: boolean;
+  message: string;
+  userId: string;
+  email: string;
+  expiresIn: string;
+  isFallback: boolean;
+}
+
+interface ProductsResponse {
+  success: boolean;
+  products: Product[];
+  totalPages: number;
+  currentPage: number;
+  total: number;
+}
+
+interface ProductResponse {
+  success: boolean;
+  product: Product;
+}
+
+interface ProductQueryParams {
+  category?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  tags?: string;
+  page?: number;
+  limit?: number;
+}
+
+interface CartResponse {
+  success: boolean;
+  cart: Cart;
+}
+
+interface CreateOrderData {
+  shippingAddressId: string;
+  shippingMethodId: string;
+  discountCode?: string;
+  paymentMethod?: string;
+  notes?: string;
+}
+
+interface OrderResponse {
+  success: boolean;
+  message: string;
+  order: Order;
+  orderItems: OrderItem[];
+}
+```
+
+---
+
+## Health Check Endpoint
+
+### Get Server Health Status
+
+**What it does:** Returns the current health status of the API server.
+
+**Endpoint:** `GET /health`
+
+**Authentication:** Not required (public endpoint)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Server is running",
+  "timestamp": "2024-01-15T10:00:00.000Z"
+}
+```
+
+**Example Request (cURL):**
+```bash
+curl http://localhost:3000/health
+```
+
+**Use Cases:**
+- Server health monitoring
+- Load balancer health checks
+- CI/CD pipeline verification
+- Frontend connection testing
+
+---
+
 ##  API Versioning
 
 Currently, the API is at **version 1.0.0**. Future versions will be indicated in the URL:
@@ -4392,11 +5505,26 @@ This API is proprietary software. All rights reserved.
 
 **Last Updated:** January 2025  
 **API Version:** 1.0.0  
-**Documentation Version:** 1.1.0
+**Documentation Version:** 2.0.0
 
 ---
 
 ## Changelog
+
+### Version 2.0.0 (January 2025)
+- **Major Documentation Update**
+- Added comprehensive Frontend Integration Guide with code examples
+- Added TypeScript type definitions for all models and responses
+- Added Product Variant model documentation
+- Added Cart, Order, Address, Shipping, Discount, and Review model documentation
+- Enhanced product creation documentation with variant examples
+- Added product response examples with variants
+- Added Health Check endpoint documentation
+- Improved Table of Contents with all endpoint categories
+- Added React hook examples
+- Added comprehensive error handling examples
+- Enhanced Getting Started section with health check verification
+- Improved product variant handling documentation
 
 ### Version 1.1.0 (January 2025)
 - Added automatic search history saving for authenticated users

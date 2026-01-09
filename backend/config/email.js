@@ -16,7 +16,6 @@ const createTransporter = async (forceEthereal = false) => {
   // If forcing Ethereal, skip Gmail
   if (forceEthereal) {
     try {
-      console.log("📧 Creating Ethereal test account...");
       const testAccount = await nodemailer.createTestAccount();
       transporter = nodemailer.createTransport({
         host: "smtp.ethereal.email",
@@ -27,8 +26,6 @@ const createTransporter = async (forceEthereal = false) => {
           pass: testAccount.pass,
         },
       });
-      console.log("✅ Email service ready (Using Ethereal for testing)");
-      console.log("   📬 View sent emails at: https://ethereal.email/messages");
       isReady = true;
       isGmail = false;
       return true;
@@ -41,14 +38,8 @@ const createTransporter = async (forceEthereal = false) => {
   // Gmail configuration - MUST have credentials
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     console.error("❌ ERROR: EMAIL_USER and EMAIL_PASSWORD must be set in .env file");
-    console.error("   Please configure Gmail credentials in your .env file");
     throw new Error("Gmail credentials not configured");
   }
-
-  console.log("📧 Configuring Gmail email service...");
-  console.log(`   Email: ${process.env.EMAIL_USER}`);
-  console.log(`   Password: ${process.env.EMAIL_PASSWORD ? '***' + process.env.EMAIL_PASSWORD.slice(-4) : 'NOT SET'}`);
-  console.log(`   Password Length: ${process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.length : 0}`);
 
   // Clean the password (remove spaces, quotes, etc.)
   const cleanPassword = process.env.EMAIL_PASSWORD.trim().replace(/['"]/g, '');
@@ -69,9 +60,7 @@ const createTransporter = async (forceEthereal = false) => {
         tls: {
           rejectUnauthorized: false,
           ciphers: 'SSLv3'
-        },
-        debug: true,
-        logger: true
+        }
       }
     },
     {
@@ -86,9 +75,7 @@ const createTransporter = async (forceEthereal = false) => {
         },
         tls: {
           rejectUnauthorized: false
-        },
-        debug: true,
-        logger: true
+        }
       }
     },
     {
@@ -97,10 +84,8 @@ const createTransporter = async (forceEthereal = false) => {
         service: "gmail",
         auth: {
           user: cleanUser,
-          pass: cleanPassword,
-        },
-        debug: true,
-        logger: true
+          pass: cleanPassword
+        }
       }
     }
   ];
@@ -108,7 +93,6 @@ const createTransporter = async (forceEthereal = false) => {
   // Try each configuration
   for (const { name, config } of gmailConfigs) {
     try {
-      console.log(`   Trying ${name}...`);
       transporter = nodemailer.createTransport(config);
 
       // Test connection with timeout
@@ -119,35 +103,18 @@ const createTransporter = async (forceEthereal = false) => {
         )
       ]);
 
-      console.log(`✅ Gmail email service is ready (${name})`);
       isReady = true;
       isGmail = true;
+      console.log(`✓ Email service ready (${name})`);
       return true;
     } catch (error) {
-      console.error(`   ❌ ${name} failed: ${error.message}`);
-      if (error.code) {
-        console.error(`   Error code: ${error.code}`);
-      }
-      if (error.response) {
-        console.error(`   Response: ${error.response}`);
-      }
       transporter = null;
       // Continue to next configuration
     }
   }
 
-  // If all Gmail configs failed, show detailed error
-  console.error("\n❌ ALL Gmail configurations failed!");
-  console.error("\n🔧 Troubleshooting Steps:");
-  console.error("1. Verify 2-Factor Authentication is enabled on your Google account");
-  console.error("2. Generate a NEW App Password at: https://myaccount.google.com/apppasswords");
-  console.error("3. Make sure you select 'Mail' and 'Other (Custom name)'");
-  console.error("4. Copy the 16-character password EXACTLY (no spaces or quotes)");
-  console.error("5. Update .env file:");
-  console.error(`   EMAIL_USER='${cleanUser}'`);
-  console.error("   EMAIL_PASSWORD='your-16-char-app-password'");
-  console.error("6. Make sure there are no extra spaces or quotes in .env");
-  console.error("7. Restart the server after updating .env\n");
+  // If all Gmail configs failed, show error
+  console.error("❌ Gmail configuration failed. Please check your credentials in .env file");
 
   // Only fallback to Ethereal if explicitly requested (for testing)
   throw new Error("Gmail configuration failed. Please check your credentials and try again.");
@@ -166,7 +133,6 @@ const ensureTransporterReady = async () => {
       ]);
       return true;
     } catch (error) {
-      console.log("   ⚠️ Gmail connection check failed, reinitializing...");
       isReady = false;
       transporter = null;
     }
@@ -195,9 +161,8 @@ const ensureTransporterReady = async () => {
 };
 
 // Initialize transporter on module load (but don't block if it fails)
-ensureTransporterReady().catch((error) => {
-  console.error("⚠️ Initial email service initialization failed:", error.message);
-  console.error("   The service will try to initialize when first email is sent.");
+ensureTransporterReady().catch(() => {
+  // Silent initialization - will retry when first email is sent
 });
 
 // Generate email template based on type
@@ -314,7 +279,6 @@ const sendVerificationCode = async (email, code, type = "password-reset") => {
     
     if (!ready || !transporter) {
       // Try to reinitialize if not ready
-      console.log("⚠️ Transporter not ready, attempting to reinitialize...");
       const reinit = await createTransporter(false);
       if (!reinit || !transporter) {
         return {
@@ -334,7 +298,6 @@ const sendVerificationCode = async (email, code, type = "password-reset") => {
           )
         ]);
       } catch (verifyError) {
-        console.log("   ⚠️ Gmail connection lost, reconnecting...");
         // Reinitialize Gmail connection
         await createTransporter(false);
         if (!transporter || !isGmail) {
@@ -388,44 +351,18 @@ If you didn't request this, please ignore this email.
       date: new Date(),
     };
 
-    console.log(`📧 Sending ${type} email to: ${email}`);
     const info = await transporter.sendMail(mailOptions);
 
     // Get preview URL if using Ethereal
     const previewUrl = nodemailer.getTestMessageUrl(info);
 
     if (previewUrl) {
-      console.log("✅ Email sent successfully (Ethereal)!");
-      console.log("   📬 Preview URL:", previewUrl);
       return { success: true, previewUrl, isFallback: true };
     } else {
-      console.log(`✅ Email sent successfully to: ${email} (Gmail)`);
-      console.log(`   Message ID: ${info.messageId}`);
-      console.log(`   Response: ${info.response || 'Sent'}`);
       return { success: true, previewUrl: null, isFallback: false };
     }
   } catch (error) {
     console.error("❌ Email sending error:", error.message);
-    if (error.code) {
-      console.error(`   Error code: ${error.code}`);
-    }
-    if (error.response) {
-      console.error(`   SMTP Response: ${error.response}`);
-    }
-    if (error.responseCode) {
-      console.error(`   Response Code: ${error.responseCode}`);
-    }
-
-    // If Gmail fails, show helpful error message
-    if (isGmail) {
-      console.error("\n🔧 Gmail sending failed. Possible issues:");
-      console.error("1. App Password might be incorrect or expired");
-      console.error("2. 2-Factor Authentication might be disabled");
-      console.error("3. Gmail account might have security restrictions");
-      console.error("4. Network/firewall might be blocking SMTP");
-      console.error("\n💡 Try generating a new App Password at: https://myaccount.google.com/apppasswords\n");
-    }
-
     return { 
       success: false, 
       error: error.message,

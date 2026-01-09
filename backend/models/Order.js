@@ -37,8 +37,14 @@ const orderSchema = new mongoose.Schema(
             enum: ["pending", "paid", "failed", "refunded"],
             default: "pending"
         },
-        paymentMethod: { type: String }, // e.g., "card", "bank_transfer", "paypal"
+        paymentMethod: { type: String }, // e.g., "card", "bank_transfer", "paypal", "paystack"
         paymentReference: { type: String }, // Payment gateway reference
+        paystackReference: { type: String }, // Paystack transaction reference
+        paystackAuthorizationUrl: { type: String }, // Paystack payment URL
+        paymentVerifiedAt: { type: Date }, // When payment was verified
+        refundReference: { type: String }, // Refund reference if refunded
+        refundReason: { type: String }, // Reason for refund
+        refundedAt: { type: Date }, // When refund was processed
         notes: { type: String }, // Order notes
         estimatedDelivery: { type: Date }, // Estimated delivery date
         trackingSteps: {
@@ -58,7 +64,7 @@ const orderSchema = new mongoose.Schema(
 
 // Index for faster queries
 orderSchema.index({ user: 1, createdAt: -1 });
-orderSchema.index({ orderNumber: 1 });
+// orderNumber already has unique index from unique: true
 orderSchema.index({ status: 1 });
 
 module.exports = mongoose.model("Order", orderSchema);
