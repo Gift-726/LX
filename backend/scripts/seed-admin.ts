@@ -1,0 +1,156 @@
+// backend/scripts/seed-admin.ts - Create admin account and sample data
+import { config } from 'dotenv';
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import User from '../models/User';
+import Category from '../models/Category';
+import Product from '../models/Product';
+
+config();
+
+const ADMIN_EMAIL = 'gianosamsung@gmail.com';
+const ADMIN_PASSWORD = 'Admin@LX2024';
+
+const seedDatabase = async (): Promise<void> => {
+    try {
+        // Connect to MongoDB
+        await mongoose.connect(process.env.MONGO_URI!);
+        console.log('Connected to MongoDB');
+
+        // 1. Create Admin Account
+        console.log('\nCreating admin account...');
+
+        const existingAdmin = await User.findOne({ email: ADMIN_EMAIL });
+
+        if (existingAdmin) {
+            console.log('Admin account already exists');
+        } else {
+            const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10);
+
+            await User.create({
+                firstname: 'Admin',
+                lastname: 'Admin',
+                email: ADMIN_EMAIL,
+                phone: '1234567890',
+                password: hashedPassword,
+                role: 'admin',
+                isVerified: true  // Admin is pre-verified
+            });
+
+            console.log('Admin account created');
+            console.log('   Email:', ADMIN_EMAIL);
+            console.log('   Password:', ADMIN_PASSWORD);
+        }
+
+        // 2. Create Sample Categories
+        console.log('\nCreating sample categories...');
+
+        const categoryData = [
+            { name: 'Men', image: 'https://via.placeholder.com/150' },
+            { name: 'Women', image: 'https://via.placeholder.com/150' },
+            { name: 'Kids', image: 'https://via.placeholder.com/150' },
+            { name: 'Accessories', image: 'https://via.placeholder.com/150' },
+            { name: 'Winter', image: 'https://via.placeholder.com/150' }
+        ];
+
+        for (const cat of categoryData) {
+            const existing = await Category.findOne({ name: cat.name });
+            if (!existing) {
+                await Category.create(cat);
+                console.log(`   Created category: ${cat.name}`);
+            }
+        }
+
+        // 3. Create Sample Products
+        console.log('\nCreating sample products...');
+
+        const menCategory = await Category.findOne({ name: 'Men' });
+        const womenCategory = await Category.findOne({ name: 'Women' });
+        const admin = await User.findOne({ email: ADMIN_EMAIL });
+
+        if (!menCategory || !womenCategory || !admin) {
+            console.error('Required data not found for product creation');
+            process.exit(1);
+        }
+
+        const productData = [
+            {
+                title: 'Aayush Rawat',
+                description: 'Premium traditional wear for special occasions',
+                price: 999.99,
+                currency: 'NGN',
+                discountPercentage: 0,
+                category: menCategory._id,
+                images: ['https://via.placeholder.com/400'],
+                tags: ['Men', 'Traditional', 'Premium'],
+                stock: 50,
+                rating: 4.5,
+                createdBy: admin._id
+            },
+            {
+                title: 'Italian Suite',
+                description: 'Elegant Italian-style business suit',
+                price: 2999.99,
+                currency: 'NGN',
+                discountPercentage: 20,
+                category: menCategory._id,
+                images: ['https://via.placeholder.com/400'],
+                tags: ['Men', 'Formal', 'Business'],
+                stock: 30,
+                rating: 4.8,
+                createdBy: admin._id
+            },
+            {
+                title: 'Basics Collection',
+                description: 'Essential wardrobe basics',
+                price: 250.99,
+                currency: 'NGN',
+                discountPercentage: 0,
+                category: womenCategory._id,
+                images: ['https://via.placeholder.com/400'],
+                tags: ['Women', 'Casual', 'Basics'],
+                stock: 100,
+                rating: 4.2,
+                createdBy: admin._id
+            },
+            {
+                title: 'Bottoms Collection',
+                description: 'Comfortable and stylish bottoms',
+                price: 350.99,
+                currency: 'NGN',
+                discountPercentage: 0,
+                category: womenCategory._id,
+                images: ['https://via.placeholder.com/400'],
+                tags: ['Women', 'Bottoms', 'Casual'],
+                stock: 75,
+                rating: 4.3,
+                createdBy: admin._id
+            }
+        ];
+
+        for (const prod of productData) {
+            const existing = await Product.findOne({ title: prod.title });
+            if (!existing) {
+                await Product.create(prod);
+                console.log(`   Created product: ${prod.title}`);
+            }
+        }
+
+        console.log('\nDatabase seeded successfully!');
+        console.log('\nSummary:');
+        console.log('   Admin Email:', ADMIN_EMAIL);
+        console.log('   Admin Password:', ADMIN_PASSWORD);
+        console.log('   Categories:', await Category.countDocuments());
+        console.log('   Products:', await Product.countDocuments());
+
+        await mongoose.connection.close();
+        process.exit(0);
+
+    } catch (error: any) {
+        console.error('Seeding error:', error);
+        await mongoose.connection.close();
+        process.exit(1);
+    }
+};
+
+seedDatabase();
